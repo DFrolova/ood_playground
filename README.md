@@ -1,91 +1,109 @@
 # ood-playground
 
+Hello! :vulcan_salute:
 
+Here, you may find a plenty of useful and lots of useless code.
 
-## Getting started
+### Setting up the Libraries:
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-- [ ] [Create](https://gitlab.com/-/experiment/new_project_readme_content:bd71bcf86cfb0d265b468c90e44dea81?https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://gitlab.com/-/experiment/new_project_readme_content:bd71bcf86cfb0d265b468c90e44dea81?https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://gitlab.com/-/experiment/new_project_readme_content:bd71bcf86cfb0d265b468c90e44dea81?https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+###### 1. Install `brain-segm` module:
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/ira-labs/projects/research/ood-playground.git
-git branch -M master
-git push -uf origin master
+git clone https://gitlab.com/ira-labs/projects/research/ood-playground.git
+cd ood-playground
+pip install -e .
 ```
 
-## Integrate with your tools
+###### 2. Install `surface-distance`:
+```
+git clone https://github.com/deepmind/surface-distance.git
+pip install surface-distance/
+```
 
-- [ ] [Set up project integrations](https://gitlab.com/-/experiment/new_project_readme_content:bd71bcf86cfb0d265b468c90e44dea81?https://docs.gitlab.com/ee/user/project/integrations/)
+Original repository: https://github.com/deepmind/surface-distance
 
-## Collaborate with your team
+To remove the `DeprecationWarning: 'np.bool' is a deprecated alias
+for the builtin 'bool'.` please change the line `49`
+in `surface_distance/metrics.py` to
 
-- [ ] [Invite team members and collaborators](https://gitlab.com/-/experiment/new_project_readme_content:bd71bcf86cfb0d265b468c90e44dea81?https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://gitlab.com/-/experiment/new_project_readme_content:bd71bcf86cfb0d265b468c90e44dea81?https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://gitlab.com/-/experiment/new_project_readme_content:bd71bcf86cfb0d265b468c90e44dea81?https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Automatically merge when pipeline succeeds](https://gitlab.com/-/experiment/new_project_readme_content:bd71bcf86cfb0d265b468c90e44dea81?https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+```
+    if array.dtype != bool:
+```
 
-## Test and Deploy
+(Might be already fixed by the time you are reading this.)
 
-Use the built-in continuous integration in GitLab.
+### Guide to run the Experiments (WMH dataset old example)
 
-- [ ] [Get started with GitLab CI/CD](https://gitlab.com/-/experiment/new_project_readme_content:bd71bcf86cfb0d265b468c90e44dea81?https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://gitlab.com/-/experiment/new_project_readme_content:bd71bcf86cfb0d265b468c90e44dea81?https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://gitlab.com/-/experiment/new_project_readme_content:bd71bcf86cfb0d265b468c90e44dea81?https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://gitlab.com/-/experiment/new_project_readme_content:bd71bcf86cfb0d265b468c90e44dea81?https://docs.gitlab.com/ee/user/clusters/agent/)
+###### 1. Paths (neuro)
+- path to WMH data: `/nmnt/x3-hdd/data/da_mri/wmh_ants/`
+- **path to experiments**: `/nmnt/x4-hdd/experiments/da_exps/`
 
-***
+Do not forget to use `chmod -R 770 [DIR]` and `chown -R [USER]:trusted [DIR]` to share
+permissions to write for the other users.
 
-# Editing this README
+###### 2. Build-run an experiment
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!).  Thank you to [makeareadme.com](https://gitlab.com/-/experiment/new_project_readme_content:bd71bcf86cfb0d265b468c90e44dea81?https://www.makeareadme.com/) for this template.
+To build and instantly run the experiment use
+```
+build_run [CONFIG] [EXP_PATH]
+```
 
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+Example:
+```
+build_run ~/da-research/configs/experiments/baseline_wmh_unet2d/one2all.config /nmnt/x4-hdd/experiments/da_exps/test/
+```
 
-## Name
-Choose a self-explaining name for your project.
+You can pass additional options that could be useful:
+- `-max [N]` restrict the maximum number of simultaneously running jobs to N.
+- `-g [N]` number of GPUs to use. 0 for CPU computations (could be useful
+to debug an exp while all GPUs are unavailable), additionally you should set
+ `device='cpu'` in config. (1 is default and utilizes GPU.)
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+###### 3. Separately build and run an experiment
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+Actually, `build_run` executes 2 following commands: `dpipe-build` and `qexp`
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+1. In case, if you want to build tons of experiments, then submit them with `-max`
+restriction, you use `dpipe-build` until you done:) then use `qexp` on the top
+directory of all previously built experiments.
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+2. In case, if your experiment has been crashed because of bug in the code, you
+could just fix the code and re-submit experiment with `qexp`. Probably you also
+need to delete `.lock` file in the experiment folder.
+(bug in the code, not config, otherwise you should rebuild experiment)
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+They have similar syntax:
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+```
+dpipe-build [CONFIG] [EXP_PATH] [OPTIONS: {-g, -max}]
+qexp [EXP_PATH] [OPTIONS: {-g, -max}]
+```
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+###### 4. Debugging
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+All logs are being saved in `~/.cache/cluster-utils/logs`, just `cat` it!
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+Validation scores, train losses and time profiles could be visualized via `tensorboard`.
+```
+tensorboard --logdir /nmnt/x4-hdd/experiments/da_exps/ --port=6067
+```
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+###### 5. Working with the remote server
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+Assuming you've run jupyter (or tensorboard) on the remote server (e.g. `neuro-x5`)
+```
+jupyter-notebook --no-browser --port=8611
+```
+Open a terminal on your computer and run
+```
+ssh -L localhost:8611:localhost:8611 -N neuro-x5
+```
+Now, if you enter `localhost:8611` in your browser, the jupyter running on the
+`neuro-x5` will be opened.
 
-## License
-For open source projects, say how it is licensed.
+Furthermore, if you want to run PyCharm to modify remote files, you need:
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
-
+1. `mkdir ~/neuro-xx` (create directory only once)
+2. `sshfs neuro-x1: ~/neuro-xx` (mounts home directory from remote server into your local folder)
+3. (now you can edit files from remote server via your favorite IDE, etc.)
+4. When finished, use `sudo umount ~/neuro-xx`
