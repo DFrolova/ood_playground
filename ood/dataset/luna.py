@@ -17,4 +17,4 @@ class LUNA16(Proxy):
     def load_spacing(self, i):
         diffs, counts = np.unique(np.round(np.diff(self.slice_locations(i)), decimals=5), return_counts=True)
         pixel_spacing = self.pixel_spacing(i)
-        return np.float32([pixel_spacing[0], pixel_spacing[1], diffs[np.argsort(counts)[-1]]])
+        return np.float32([pixel_spacing[0], pixel_spacing[1], -diffs[np.argsort(counts)[-1]]])

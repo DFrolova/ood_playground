@@ -1,5 +1,6 @@
 import numpy as np
 
+from dpipe.dataset import Dataset
 from dpipe.dataset.wrappers import Proxy
 from dpipe.im.shape_ops import zoom
 
@@ -44,3 +45,10 @@ def scale_mri(image: np.ndarray, q_min: int = 1, q_max: int = 99) -> np.ndarray:
     image -= np.min(image)
     image /= np.max(image)
     return np.float32(image)
+
+
+def scale_ct(x: np.ndarray, min_value: float = -1200, max_value: float = 600) -> np.ndarray:
+    x = np.clip(x, a_min=min_value, a_max=max_value)
+    x -= np.min(x)
+    x /= np.max(x)
+    return np.float32(x)
