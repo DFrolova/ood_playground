@@ -45,7 +45,6 @@ def evaluate_individual_metrics_probably_with_ids(load_y_true, metrics: dict, pr
     for metric_name, result in results.items():
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
 
-
 def evaluate_individual_metrics_probably_with_ids_no_pred(load_y, load_x, predict, metrics: dict, test_ids,
                                                           results_path, exist_ok=False):
     assert len(metrics) > 0, 'No metric provided'

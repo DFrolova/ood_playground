@@ -36,6 +36,20 @@ def extract_patch(inputs, x_patch_size, y_patch_size, spatial_dims=SPATIAL_DIMS)
     return x_patch, y_patch
 
 
+def center_choice(inputs, y_patch_size, random_state: np.random.RandomState, nonzero_fraction=0.5):
+    x, y, centers = inputs
+
+    y_patch_size = np.array(y_patch_size)
+    if len(centers) > 0 and random_state.uniform() < nonzero_fraction:
+        sampled_id = random_state.choice(range(len(centers)), p=centers[:, -1])
+        center = centers[sampled_id, :-1].astype(int)
+    else:
+        center = sample_center_uniformly(y.shape, patch_size=y_patch_size, 
+                                         spatial_dims=SPATIAL_DIMS, random_state=random_state)
+
+    return x, y, center
+
+
 # ### 2D pipeline: ###
 
 

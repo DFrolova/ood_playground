@@ -1,4 +1,5 @@
 import numpy as np
+from skimage import measure
 
 from dpipe.dataset import Dataset
 from dpipe.dataset.wrappers import Proxy
@@ -38,6 +39,16 @@ class Rescale3D(Change):
 
     def load_orig_spacing(self, i):
         return self._shadowed.load_spacing(i)
+    
+    def load_tumor_centers(self, i):
+        segm = self.load_segm(i=i)
+        y_bin = segm == 1.
+        labels, n_labels = measure.label(y_bin, connectivity=2, return_num=True)
+        result_centers = [np.argwhere(labels == label) for label in range(1, n_labels + 1)]
+        lengths_cc = np.array([len(cc) for cc in result_centers])
+        probas = np.array([1 / len_cc for len_cc in lengths_cc]) / n_labels
+        broadcated_probas = np.repeat(probas, lengths_cc)[:, None]
+        return np.hstack((np.vstack(result_centers), broadcated_probas))
 
 
 def scale_mri(image: np.ndarray, q_min: int = 1, q_max: int = 99) -> np.ndarray:
