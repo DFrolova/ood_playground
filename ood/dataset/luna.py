@@ -1,7 +1,11 @@
+import os
+
 import numpy as np
 
 from dpipe.dataset.wrappers import Proxy
+from dpipe.io import load
 from neurodata.lidc import LIDC
+from ood.paths import LIDS_SUPPLEMENTARY_PATH
 
 
 class LUNA16(Proxy):
@@ -21,6 +25,9 @@ class LUNA16(Proxy):
     
     def n_tumors(self, i):
         return len(self.nodules(i))
+    
+    def load_lungs(self, i):
+        return load(os.path.join(LIDS_SUPPLEMENTARY_PATH, str(i)))
     
     
 def get_n_tumors(dataset, ids):
