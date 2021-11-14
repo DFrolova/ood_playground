@@ -37,3 +37,7 @@ def sdice(a, b, spacing, tolerance):
 def skip_predict(output_path):
     print(f'>>> Passing the step of saving predictions into `{output_path}`', flush=True)
     os.makedirs(output_path)
+    
+
+def volume2diameter(volume):
+    return (6 * volume / np.pi) ** (1 / 3)
