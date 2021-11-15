@@ -91,26 +91,6 @@ def evaluate_individual_metrics_probably_with_ids_no_pred(load_y, load_x, predic
     for metric_name, result in results.items():
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
 
-
-def evaluate_individual_metrics_probably_with_ids_no_pred_mc_dropout(load_y, load_x, predict, ood_metrics: dict,
-                                                                     test_ids, results_path, exist_ok=False):
-    assert len(metrics) > 0, 'No metric provided'
-    os.makedirs(results_path, exist_ok=exist_ok)
-
-    results = defaultdict(dict)
-    for _id in tqdm(test_ids):
-        target = load_y(_id)
-        predictions_list = predict(load_x(_id))
-
-        for metric_name, metric in metrics.items():
-            try:
-                results[metric_name][_id] = metric(target, prediction, _id)
-            except TypeError:
-                results[metric_name][_id] = metric(target, prediction)
-
-    for metric_name, result in results.items():
-        save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
-
         
 def get_intersection_stat_dice_id(cc_mask, one_cc, pred=None, logit=None):
     """Returns max local dice and corresponding stat to this hit component.

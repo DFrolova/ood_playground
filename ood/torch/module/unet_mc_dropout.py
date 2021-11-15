@@ -1,9 +1,13 @@
 import warnings
+from typing import Callable
 
+import numpy as np
 import torch
 from torch import nn
 
 from dpipe.layers.resblock import ResBlock3d
+from dpipe.im.utils import identity
+from dpipe.torch.utils import to_np, sequence_to_var
 
 
 class UNet3D_MC_Dropout(nn.Module):
@@ -89,8 +93,22 @@ class UNet3D_MC_Dropout(nn.Module):
     
 def enable_dropout(model: nn.Module):
     """ Function to enable the dropout layers during test-time """
-    print('ENABLING DROPOUT')
     for m in model.modules():
         if m.__class__.__name__.startswith('Dropout'):
-            print(m.__class__.__name__)
             m.train()
+       
+       
+def inference_step_mc_dropout(*inputs: np.ndarray, architecture: nn.Module, activation: Callable = identity, 
+                              amp: bool = False) -> np.ndarray:
+    """
+    Returns the prediction for the given ``inputs`` with all dropout layers turned to a train mode.
+    Notes
+    -----
+    Note that both input and output are **not** of type ``torch.Tensor`` - the conversion
+    to and from ``torch.Tensor`` is made inside this function.
+    """
+    architecture.eval()
+    enable_dropout(architecture)
+    with torch.no_grad():
+        with torch.cuda.amp.autocast(amp or torch.is_autocast_enabled()):
+            return to_np(activation(architecture(*sequence_to_var(*inputs, device=architecture))))
