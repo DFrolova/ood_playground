@@ -30,14 +30,14 @@ def compute_metrics_probably_with_ids(predict: Callable, load_x: Callable, load_
     return evaluate_with_ids(list(map(load_y, ids)), [predict(load_x(i)) for i in ids], ids, metrics)
 
 
-def evaluate_individual_metrics_with_froc(load_y_true, metrics: dict,
+def evaluate_individual_metrics_with_froc(load_y, metrics: dict,
                                          predictions_path, logits_path, results_path, exist_ok=False):
     assert len(metrics) > 0, 'No metric provided'
     os.makedirs(results_path, exist_ok=exist_ok)
 
     results = defaultdict(dict)
     for identifier, prediction in tqdm(load_from_folder(predictions_path)):
-        target = load_y_true(identifier)
+        target = load_y(identifier)
 
         for metric_name, metric in metrics.items():
             if metric_name == 'froc_records':
@@ -51,7 +51,54 @@ def evaluate_individual_metrics_with_froc(load_y_true, metrics: dict,
 
     for metric_name, result in results.items():
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
+        
+        
+def evaluate_individual_metrics_with_froc_no_logits(load_y, load_x, metrics: dict, predict_logit,
+                                         predictions_path, results_path, exist_ok=False):
+    assert len(metrics) > 0, 'No metric provided'
+    os.makedirs(results_path, exist_ok=exist_ok)
 
+    results = defaultdict(dict)
+    for identifier, prediction in tqdm(load_from_folder(predictions_path)):
+        target = load_y(identifier)
+
+        for metric_name, metric in metrics.items():
+            if metric_name == 'froc_records':
+                logit = predict_logit(load_x(identifier))
+                results[metric_name][identifier] = metric(target, prediction, logit)
+            else:
+                try:
+                    results[metric_name][identifier] = metric(target, prediction, identifier)
+                except TypeError:
+                    results[metric_name][identifier] = metric(target, prediction)
+
+    for metric_name, result in results.items():
+        save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
+        
+        
+def evaluate_individual_metrics_with_froc_no_pred(load_y, load_x, predict, predict_logit, metrics: dict, test_ids, 
+                                                  results_path, exist_ok=False):
+    assert len(metrics) > 0, 'No metric provided'
+    os.makedirs(results_path, exist_ok=exist_ok)
+
+    results = defaultdict(dict)
+    for identifier in tqdm(test_ids):
+        target = load_y(identifier)
+        prediction = predict(load_x(identifier))
+
+        for metric_name, metric in metrics.items():
+            if metric_name == 'froc_records':
+                logit = predict_logit(load_x(identifier))
+                results[metric_name][identifier] = metric(target, prediction, logit)
+            else:
+                try:
+                    results[metric_name][identifier] = metric(target, prediction, identifier)
+                except TypeError:
+                    results[metric_name][identifier] = metric(target, prediction)
+
+    for metric_name, result in results.items():
+        save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
+        
 
 def evaluate_individual_metrics_probably_with_ids(load_y_true, metrics: dict, predictions_path, results_path,
                                                   exist_ok=False):
