@@ -39,11 +39,22 @@ def tnr_at_95_tpr(y_true, y_pred):
     return accuracy_score(y_true, y_pred > threshold)
 
 
-def get_top_n_labels_std(prediction_list, n): # TODO check
+def get_top_n_labels_var(prediction_list, n):
     ensemble_preds = []
     for preds in prediction_list:
         sorted_preds = np.sort(preds)
         ensemble_preds.append(sorted_preds.flatten()[-n:])
+    
+    ensemble_preds = np.array(ensemble_preds)
+    var_preds = ensemble_preds.var(axis=0)
+    label = var_preds.mean()
+    return label
+
+
+def get_all_labels_var(prediction_list):
+    ensemble_preds = []
+    for preds in prediction_list:
+        ensemble_preds.append(preds.flatten())
     
     ensemble_preds = np.array(ensemble_preds)
     var_preds = ensemble_preds.var(axis=0)
