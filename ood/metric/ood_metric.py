@@ -1,5 +1,6 @@
 import os
 from collections import defaultdict
+import warnings
 
 import numpy as np
 from tqdm import tqdm
@@ -60,3 +61,21 @@ def get_all_labels_var(prediction_list):
     var_preds = ensemble_preds.var(axis=0)
     label = var_preds.mean()
     return label
+
+
+def get_abs_ue_score(y_true, prediction):
+    # y_true is not used here, added just to have similar interface to other metrics
+    uncertainty_result = np.zeros_like(prediction)
+    uncertainty_result[prediction > 0.5] = (1 - prediction)[prediction > 0.5]
+    uncertainty_result[prediction <= 0.5] = prediction[prediction <= 0.5]
+    return uncertainty_result.mean()
+
+
+def get_entropy(y_true, prediction, eps=1e-9):        
+    # y_true is not used here, added just to have similar interface to other metrics
+    warnings.filterwarnings('ignore')
+    uncertainty_result = - (prediction * np.log2(prediction + eps) + (1 - prediction) * np.log2(1 - prediction + eps))
+    uncertainty_result[prediction == 0] = 0
+    uncertainty_result[prediction == 1] = 0
+    warnings.filterwarnings('default')
+    return uncertainty_result.mean()
