@@ -63,6 +63,17 @@ def get_all_labels_var(prediction_list):
     return label
 
 
+def get_all_labels_std(prediction_list):
+    ensemble_preds = []
+    for preds in prediction_list:
+        ensemble_preds.append(preds.flatten())
+    
+    ensemble_preds = np.array(ensemble_preds)
+    var_preds = ensemble_preds.std(axis=0)
+    label = var_preds.mean()
+    return label
+
+
 def get_abs_ue_score(y_true, prediction):
     # y_true is not used here, added just to have similar interface to other metrics
     uncertainty_result = np.zeros_like(prediction)

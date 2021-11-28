@@ -61,19 +61,29 @@ def rotate_3d(inputs, limit, random_state):
     return tuple(outputs)
 
 
-def rotate90(inputs, k):
-#     k = random_state.choice(range(1, 4))
-    outputs = []
-    for output in inputs:
-        output = np.rot90(output, k=k, axes=SPATIAL_DIMS[:2])
-        outputs.append(output)
-    return tuple(outputs)
+def rotate90(image, k):
+    output = np.rot90(image, k=k, axes=SPATIAL_DIMS[:2])
+    return output
 
 
-def flip(inputs, ax):
-#     ax = random_state.choice(range(1, 3))
-    outputs = []
-    for output in inputs:
-        output = np.flip(output, axis=SPATIAL_DIMS[:2][ax])
-        outputs.append(output)
-    return tuple(outputs)
+# def rotate90(inputs, k):
+# #     k = random_state.choice(range(1, 4))
+#     outputs = []
+#     for output in inputs:
+#         output = np.rot90(output, k=k, axes=SPATIAL_DIMS[:2])
+#         outputs.append(output)
+#     return tuple(outputs)
+
+
+def flip(image, ax):
+    output = np.flip(image, axis=SPATIAL_DIMS[:2][ax])
+    return output
+
+
+# def flip(inputs, ax):
+# #     ax = random_state.choice(range(1, 3))
+#     outputs = []
+#     for output in inputs:
+#         output = np.flip(output, axis=SPATIAL_DIMS[:2][ax])
+#         outputs.append(output)
+#     return tuple(outputs)

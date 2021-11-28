@@ -9,6 +9,8 @@ from skimage.measure import label
 from dpipe.commands import load_from_folder
 from dpipe.io import save_json, load_pred
 from dpipe.im.metrics import dice_score
+from dpipe.im.box import get_centered_box
+from dpipe.im.shape_ops import crop_to_box
 from dpipe.itertools import zip_equal
 from ood.utils import volume2diameter, get_pred
 
@@ -85,6 +87,32 @@ def evaluate_individual_metrics_with_froc_no_pred(load_y, load_x, predict, predi
     for identifier in tqdm(test_ids):
         target = load_y(identifier)
         prediction = predict(load_x(identifier))
+
+        for metric_name, metric in metrics.items():
+            if metric_name == 'froc_records':
+                logit = predict_logit(load_x(identifier))
+                results[metric_name][identifier] = metric(target, prediction, logit)
+            else:
+                try:
+                    results[metric_name][identifier] = metric(target, prediction, identifier)
+                except TypeError:
+                    results[metric_name][identifier] = metric(target, prediction)
+
+    for metric_name, result in results.items():
+        save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
+        
+        
+def evaluate_individual_metrics_with_froc_no_pred_with_crops(load_y, load_x, predict, predict_logit, metrics: dict, test_ids, 
+                                                  results_path, exist_ok=False):
+    assert len(metrics) > 0, 'No metric provided'
+    os.makedirs(results_path, exist_ok=exist_ok)
+
+    results = defaultdict(dict)
+    for identifier in tqdm(test_ids):
+        target = load_y(identifier)
+        prediction, center, crop_shape = predict(load_x(identifier))
+        spatial_box = get_centered_box(center, crop_shape)
+        target = crop_to_box(target, box=spatial_box, padding_values=np.min, axis=SPATIAL_DIMS)
 
         for metric_name, metric in metrics.items():
             if metric_name == 'froc_records':
