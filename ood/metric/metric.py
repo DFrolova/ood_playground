@@ -13,6 +13,7 @@ from dpipe.im.box import get_centered_box
 from dpipe.im.shape_ops import crop_to_box
 from dpipe.itertools import zip_equal
 from ood.utils import volume2diameter, get_pred
+from ood.batch_iter.pipeline import SPATIAL_DIMS, sample_center_uniformly
 
 
 def aggregate_metric_probably_with_ids(xs, ys, ids, metric, aggregate_fn=np.mean):
@@ -103,29 +104,41 @@ def evaluate_individual_metrics_with_froc_no_pred(load_y, load_x, predict, predi
         
         
 def evaluate_individual_metrics_with_froc_no_pred_with_crops(load_y, load_x, predict, predict_logit, metrics: dict, test_ids, 
-                                                  results_path, exist_ok=False):
+                                                  results_path, x_patch_size, random_state, n_repeats, exist_ok=False):
     assert len(metrics) > 0, 'No metric provided'
     os.makedirs(results_path, exist_ok=exist_ok)
 
     results = defaultdict(dict)
     for identifier in tqdm(test_ids):
+        image = load_x(identifier)
         target = load_y(identifier)
-        prediction, center, crop_shape = predict(load_x(identifier))
-        spatial_box = get_centered_box(center, crop_shape)
-        target = crop_to_box(target, box=spatial_box, padding_values=np.min, axis=SPATIAL_DIMS)
+        high_lim = min([image.shape[i] for i in SPATIAL_DIMS])
+        
+        for i in range(n_repeats):
+            crop_shape = np.array([random_state.randint(x_patch_size[0], high_lim), ] * len(SPATIAL_DIMS))
+            center = sample_center_uniformly(image.shape, crop_shape, spatial_dims=SPATIAL_DIMS, random_state=random_state)
+            spatial_box = get_centered_box(center, crop_shape)
+            image_cropped = crop_to_box(image, box=spatial_box, padding_values=np.min, axis=SPATIAL_DIMS)
+            prediction = predict(image_cropped)
+            target_cropped = crop_to_box(target, box=spatial_box, padding_values=np.min, axis=SPATIAL_DIMS)
 
-        for metric_name, metric in metrics.items():
-            if metric_name == 'froc_records':
-                logit = predict_logit(load_x(identifier))
-                results[metric_name][identifier] = metric(target, prediction, logit)
-            else:
-                try:
-                    results[metric_name][identifier] = metric(target, prediction, identifier)
-                except TypeError:
-                    results[metric_name][identifier] = metric(target, prediction)
+            results['centers'][identifier + str(i)] = center
+            results['crop_shapes'][identifier + str(i)] = crop_shape
+
+            for metric_name, metric in metrics.items():
+                if metric_name == 'froc_records':
+                    logit = predict_logit(image_cropped)
+                    results[metric_name][identifier + str(i)] = metric(target_cropped, prediction, logit)
+                else:
+                    try:
+                        results[metric_name][identifier + str(i)] = metric(target_cropped, prediction, identifier)
+                    except TypeError:
+                        results[metric_name][identifier + str(i)] = metric(target_cropped, prediction)
 
     for metric_name, result in results.items():
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
+        
+    
         
 
 def evaluate_individual_metrics_probably_with_ids(load_y_true, metrics: dict, predictions_path, results_path,

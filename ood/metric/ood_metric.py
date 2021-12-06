@@ -4,6 +4,7 @@ import warnings
 
 import numpy as np
 from tqdm import tqdm
+from sklearn.metrics import roc_auc_score
 
 from dpipe.io import save_json
 
@@ -36,8 +37,18 @@ def detection_accuracy(y_true, y_pred):
 
 
 def tnr_at_95_tpr(y_true, y_pred):
-    threshold = np.percentile(y_pred[~y_true], 95)    
-    return accuracy_score(y_true, y_pred > threshold)
+    threshold = np.percentile(y_pred[~y_true], 95) 
+    return (y_pred[y_true] > threshold).sum() / y_true.sum()
+
+
+def calc_ood_scores(labels, is_ood_true):
+    det_acc = detection_accuracy(is_ood_true, labels)
+    roc_auc = roc_auc_score(is_ood_true, labels)
+    tnr = tnr_at_95_tpr(is_ood_true, labels)
+    print(f'Detection accuracy: {det_acc:.4f}')
+    print(f'AUROC: {roc_auc:.4f}')
+    print(f'TNR @ 95% TPR: {tnr:.4f}')
+    return det_acc, roc_auc, tnr
 
 
 def get_top_n_labels_var(prediction_list, n):
