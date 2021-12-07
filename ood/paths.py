@@ -11,7 +11,7 @@ CC359_DATA_PATH = choose_root(
     '/',  # TODO: avoiding `FileNotFoundError`
 )
 
-LIDS_SUPPLEMENTARY_PATH = '/data/lidc_supplementary/'
+LIDC_SUPPLEMENTARY_PATH = '/data/lidc_supplementary/'
 
 WMH_DATA_PATH = choose_root(
     '/nmnt/x3-hdd/data/da_mri/wmh_ants',
