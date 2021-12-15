@@ -7,7 +7,7 @@ from tqdm import tqdm
 from skimage.measure import label
 
 from dpipe.commands import load_from_folder
-from dpipe.io import save_json, load_pred
+from dpipe.io import save_json, load_pred, save
 from dpipe.im.metrics import dice_score
 from dpipe.im.box import get_centered_box
 from dpipe.im.shape_ops import crop_to_box
@@ -103,8 +103,49 @@ def evaluate_individual_metrics_with_froc_no_pred(load_y, load_x, predict, predi
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
         
         
+def evaluate_individual_metrics_with_froc_no_pred_lits(load_y, load_x, load_spacing, load_slice_location, predict, 
+                                                       predict_logit, metrics: dict, test_ids,
+                                                       results_path, predictions_path=None, exist_ok=False):
+    assert len(metrics) > 0, 'No metric provided'
+    os.makedirs(results_path, exist_ok=exist_ok)
+    
+    if predictions_path is None:
+        save_predictions = False
+    else:
+        save_predictions = True
+        os.makedirs(predictions_path, exist_ok=exist_ok)
+
+    results = defaultdict(dict)
+    for identifier in tqdm(test_ids):
+        pixel_spacing = load_spacing(identifier)
+        if load_slice_location is None:
+            slices_location = None
+        else:
+            slices_location = load_slice_location(identifier)
+        target = load_y(identifier)
+        prediction = predict(load_x(identifier), pixel_spacing=pixel_spacing, slices_location=slices_location)
+        
+        if save_predictions:
+            output_file_path = os.path.join(predictions_path, f'{identifier}.npy.gz')
+            save(prediction, output_file_path, compression=9)
+
+        for metric_name, metric in metrics.items():
+            if metric_name == 'froc_records':
+                logit = predict_logit(load_x(identifier))
+                results[metric_name][identifier] = metric(target, prediction, logit)
+            else:
+                try:
+                    results[metric_name][identifier] = metric(target, prediction, identifier)
+                except TypeError:
+                    results[metric_name][identifier] = metric(target, prediction)
+
+    for metric_name, result in results.items():
+        save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
+        
+        
 def evaluate_individual_metrics_with_froc_no_pred_with_crops(load_y, load_x, predict, predict_logit, metrics: dict, test_ids, 
-                                                  results_path, x_patch_size, random_state, n_repeats, exist_ok=False):
+                                                             results_path, x_patch_size, pred_patch_stride, 
+                                                             random_state, n_repeats, exist_ok=False):
     assert len(metrics) > 0, 'No metric provided'
     os.makedirs(results_path, exist_ok=exist_ok)
 
@@ -112,10 +153,11 @@ def evaluate_individual_metrics_with_froc_no_pred_with_crops(load_y, load_x, pre
     for identifier in tqdm(test_ids):
         image = load_x(identifier)
         target = load_y(identifier)
-        high_lim = min([image.shape[i] for i in SPATIAL_DIMS])
+        high_lim = min([image.shape[i] for i in SPATIAL_DIMS]) // pred_patch_stride * pred_patch_stride
         
         for i in range(n_repeats):
-            crop_shape = np.array([random_state.randint(x_patch_size[0], high_lim), ] * len(SPATIAL_DIMS))
+            crop_shape = np.array([random_state.randint(x_patch_size[0] // pred_patch_stride, 
+                                   high_lim // pred_patch_stride), ] * len(SPATIAL_DIMS)) * pred_patch_stride
             center = sample_center_uniformly(image.shape, crop_shape, spatial_dims=SPATIAL_DIMS, random_state=random_state)
             spatial_box = get_centered_box(center, crop_shape)
             image_cropped = crop_to_box(image, box=spatial_box, padding_values=np.min, axis=SPATIAL_DIMS)
@@ -131,14 +173,12 @@ def evaluate_individual_metrics_with_froc_no_pred_with_crops(load_y, load_x, pre
                     results[metric_name][identifier + str(i)] = metric(target_cropped, prediction, logit)
                 else:
                     try:
-                        results[metric_name][identifier + str(i)] = metric(target_cropped, prediction, identifier)
+                        results[metric_name][identifier + '_' + str(i)] = metric(target_cropped, prediction, identifier)
                     except TypeError:
-                        results[metric_name][identifier + str(i)] = metric(target_cropped, prediction)
+                        results[metric_name][identifier + '_' + str(i)] = metric(target_cropped, prediction)
 
     for metric_name, result in results.items():
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
-        
-    
         
 
 def evaluate_individual_metrics_probably_with_ids(load_y_true, metrics: dict, predictions_path, results_path,
