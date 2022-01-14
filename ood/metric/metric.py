@@ -164,8 +164,8 @@ def evaluate_individual_metrics_with_froc_no_pred_with_crops(load_y, load_x, pre
             prediction = predict(image_cropped)
             target_cropped = crop_to_box(target, box=spatial_box, padding_values=np.min, axis=SPATIAL_DIMS)
 
-            results['centers'][identifier + str(i)] = center
-            results['crop_shapes'][identifier + str(i)] = crop_shape
+            results['centers'][identifier + '_' + str(i)] = center
+            results['crop_shapes'][identifier + '_' + str(i)] = crop_shape
 
             for metric_name, metric in metrics.items():
                 if metric_name == 'froc_records':
