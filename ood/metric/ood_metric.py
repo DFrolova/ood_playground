@@ -7,17 +7,32 @@ from tqdm import tqdm
 from sklearn.metrics import roc_auc_score
 
 from dpipe.io import save_json
+from dpipe.im.metrics import iou
 
 
-def evaluate_individual_metrics_probably_with_ids_no_pred_mc_dropout(load_y, load_x, predict, test_ids, results_path,
-                                                                     agg_functions: dict, exist_ok=False):
+def evaluate_individual_metrics_probably_with_ids_no_pred_mc_dropout(load_y, load_x, predict, predict_logit, 
+                                                                     predict_with_dropout, test_ids, 
+                                                                     results_path, agg_functions: dict, 
+                                                                     segm_functions: dict, exist_ok=False):
     assert len(agg_functions) > 0, 'No aggregate functions provided'
     os.makedirs(results_path, exist_ok=exist_ok)
 
     results = defaultdict(dict)
     for _id in tqdm(test_ids):
         target = load_y(_id)
-        predictions_list = predict(load_x(_id))
+        input_img = load_x(_id)
+        deterministic_prediction = predict(input_img)
+        predictions_list = predict_with_dropout(input_img)
+        
+        for agg_func_name, agg_func in segm_functions.items():
+            if agg_func_name == 'froc_records':
+                deterministic_logit = predict_logit(load_x(_id))
+                results[agg_func_name][_id] = agg_func(target, deterministic_prediction, deterministic_logit)
+            else:
+                try:
+                    results[agg_func_name][_id] = agg_func(target, deterministic_prediction, _id)
+                except TypeError:
+                    results[agg_func_name][_id] = agg_func(target, deterministic_prediction)
 
         for agg_func_name, agg_func in agg_functions.items():
             results[agg_func_name][_id] = agg_func(predictions_list)
@@ -85,11 +100,34 @@ def get_all_labels_std(prediction_list):
     return label
 
 
-def get_abs_ue_score(y_true, prediction):
+def get_mean_iou(prediction_list):
+    ensemble_preds = []
+    for preds in prediction_list:
+        ensemble_preds.append(preds.flatten())
+    
+    ensemble_preds = np.array(ensemble_preds)
+    mean_preds = ensemble_preds.mean(axis=0)
+    ious = [1 - iou(mean_preds > 0.5, pred > 0.5) for pred in ensemble_preds]
+    label = np.mean(ious)
+    return label
+
+
+def get_mean_volume(prediction_list):
+    ensemble_preds = []
+    for preds in prediction_list:
+        ensemble_preds.append(preds.flatten())
+    
+    ensemble_preds = np.array(ensemble_preds)
+    volumes = np.array([(pred > 0.5).sum() for pred in ensemble_preds])
+    mean_volume = volumes.mean()
+    std_volume = volumes.std()
+    label = std_volume / mean_volume
+    return label
+
+
+def get_maxprob_score(y_true, prediction):
     # y_true is not used here, added just to have similar interface to other metrics
-    uncertainty_result = np.zeros_like(prediction)
-    uncertainty_result[prediction > 0.5] = (1 - prediction)[prediction > 0.5]
-    uncertainty_result[prediction <= 0.5] = prediction[prediction <= 0.5]
+    uncertainty_result = 1 - np.maximum(prediction, 1 - prediction)
     return uncertainty_result.mean()
 
 
