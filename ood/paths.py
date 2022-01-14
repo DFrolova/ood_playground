@@ -7,7 +7,7 @@ from .utils import choose_root
 CC359_DATA_PATH = choose_root(
     '/nmnt/x3-hdd/data/da_mri/cc359',
     '/gpfs/data/gpfs0/b.shirokikh/data/cc359',
-    '/data/cc359',
+    '/shared/data/cc359',
     '/',  # TODO: avoiding `FileNotFoundError`
 )
 
@@ -19,8 +19,8 @@ WMH_DATA_PATH = choose_root(
     '/',  # TODO: avoiding `FileNotFoundError`
 )
 
-GAMMA_KNIFE_BRAIN_PATH = choose_root(
-    '/gpfs/data/gpfs0/b.shirokikh/data/gamma-knife-brain',
-    '/data/gamma-knife-brain',
+GAMMA_KNIFE_MET_T1_T1C_PATH = choose_root(
+    '/nmnt/x4-hdd/experiments/gamma-knife-met-t1-t1c',
+    '/shared/data/gamma-knife-met-t1-t1c/',
     '/',  # TODO: avoiding `FileNotFoundError`
 )
