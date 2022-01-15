@@ -24,3 +24,8 @@ GAMMA_KNIFE_MET_T1_T1C_PATH = choose_root(
     '/shared/data/gamma-knife-met-t1-t1c/',
     '/',  # TODO: avoiding `FileNotFoundError`
 )
+
+GAMMA_KNIFE_BRAIN_PATH = choose_root(
+    '/shared/data/gamma-knife-brain/',
+    '/',  # TODO: avoiding `FileNotFoundError`
+)
