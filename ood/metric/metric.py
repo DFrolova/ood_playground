@@ -102,7 +102,7 @@ def evaluate_individual_metrics_with_froc_no_pred(load_y, load_x, predict, predi
     for metric_name, result in results.items():
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
         
-        
+'''       
 def evaluate_individual_metrics_with_froc_no_pred_lits(load_y, load_x, load_spacing, load_slice_location, predict, 
                                                        predict_logit, metrics: dict, test_ids,
                                                        results_path, predictions_path=None, exist_ok=False):
@@ -141,6 +141,7 @@ def evaluate_individual_metrics_with_froc_no_pred_lits(load_y, load_x, load_spac
 
     for metric_name, result in results.items():
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
+'''
         
         
 def evaluate_individual_metrics_with_froc_no_pred_with_crops(load_y, load_x, predict, predict_logit, metrics: dict, test_ids, 
