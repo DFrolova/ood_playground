@@ -219,6 +219,35 @@ def evaluate_individual_metrics_probably_with_ids_no_pred(load_y, load_x, predic
 
     for metric_name, result in results.items():
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
+        
+        
+def evaluate_individual_metrics_probably_with_ids_no_pred_mc_dropout(load_y, load_x, predict, predict_logit, 
+                                                                     predict_with_dropout, test_ids, 
+                                                                     results_path, agg_function, 
+                                                                     segm_functions: dict={}, exist_ok=False):
+    os.makedirs(results_path, exist_ok=exist_ok)
+
+    results = defaultdict(dict)
+    for _id in tqdm(test_ids):
+        target = load_y(_id)
+        input_img = load_x(_id)
+        deterministic_prediction = predict(input_img)
+        ensemble_preds = predict_with_dropout(input_img)
+        results[_id] = agg_function(ensemble_preds)
+        
+        for agg_func_name, agg_func in segm_functions.items():
+            if agg_func_name == 'froc_records':
+                deterministic_logit = predict_logit(load_x(_id))
+                results[_id][agg_func_name] = agg_func(target, deterministic_prediction, deterministic_logit)
+            else:
+                try:
+                    results[_id][agg_func_name] = agg_func(target, deterministic_prediction, _id)
+                except TypeError:
+                    results[_id][agg_func_name] = agg_func(target, deterministic_prediction)
+
+    for agg_func_name in results[list(results.keys())[0]].keys():
+        result = {_id: results[_id][agg_func_name] for _id in results.keys()}
+        save_json(result, os.path.join(results_path, agg_func_name + '.json'), indent=0)
 
         
 def get_intersection_stat_dice_id(cc_mask, one_cc, pred=None, logit=None):
