@@ -38,6 +38,11 @@ def skip_predict(output_path):
     print(f'>>> Passing the step of saving predictions into `{output_path}`', flush=True)
     os.makedirs(output_path)
     
+    
+def skip_calculating_metrics(**args):
+    print('>>> Passing the step of calculating test metrics', flush=True)
+    os.makedirs('test_metrics')
+    
 
 def volume2diameter(volume):
     return (6 * volume / np.pi) ** (1 / 3)
