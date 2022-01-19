@@ -11,8 +11,6 @@ CC359_DATA_PATH = choose_root(
     '/',  # TODO: avoiding `FileNotFoundError`
 )
 
-LIDC_SUPPLEMENTARY_PATH = '/data/lidc_supplementary/'
-
 WMH_DATA_PATH = choose_root(
     '/nmnt/x3-hdd/data/da_mri/wmh_ants',
     '/gpfs/data/gpfs0/b.shirokikh/data/wmh_ants',
@@ -27,5 +25,10 @@ GAMMA_KNIFE_MET_T1_T1C_PATH = choose_root(
 
 GAMMA_KNIFE_BRAIN_PATH = choose_root(
     '/shared/data/gamma-knife-brain/',
+    '/',  # TODO: avoiding `FileNotFoundError`
+)
+
+ENSEMBLE_MODELS_PATH = choose_root(
+    '/shared/experiments/ood_playground/cc359/ensemble2/',
     '/',  # TODO: avoiding `FileNotFoundError`
 )
