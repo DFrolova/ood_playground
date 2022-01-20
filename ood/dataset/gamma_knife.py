@@ -6,6 +6,7 @@ import pandas as pd
 from dpipe.im.shape_ops import zoom
 from dpipe.io import load
 from dpipe.dataset.wrappers import Proxy
+from ood.batch_iter.pipeline import SPATIAL_DIMS
 
 
 class GammaKnife:
@@ -93,3 +94,8 @@ class Rescale3D(Change):
 
     def load_orig_spacing(self, i):
         return self._shadowed.load_spacing(i)
+    
+
+class RotateImage(Change):
+    def _change(self, x, i):
+        return np.flip(np.rot90(x, k=3, axes=(-3, -2)), axis=SPATIAL_DIMS[2])
