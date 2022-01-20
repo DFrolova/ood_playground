@@ -57,13 +57,14 @@ def tnr_at_95_tpr(y_true, y_pred):
     return (y_pred[y_true] > threshold).sum() / y_true.sum()
 
 
-def calc_ood_scores(labels, is_ood_true):
+def calc_ood_scores(labels, is_ood_true, print_results=True):
     det_acc = detection_accuracy(is_ood_true, labels)
     roc_auc = roc_auc_score(is_ood_true, labels)
     tnr = tnr_at_95_tpr(is_ood_true, labels)
-    print(f'Detection accuracy: {det_acc:.4f}')
-    print(f'AUROC: {roc_auc:.4f}')
-    print(f'TNR @ 95% TPR: {tnr:.4f}')
+    if print_results:
+        print(f'Detection accuracy: {det_acc:.4f}')
+        print(f'AUROC: {roc_auc:.4f}')
+        print(f'TNR @ 95% TPR: {tnr:.4f}')
     return det_acc, roc_auc, tnr
 
 # these metrics are incorrectly written. All are in get_inconsistency_metrics method
