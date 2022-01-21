@@ -36,9 +36,6 @@ class GammaKnife:
         return np.float32(load(self.data_path / self.df.loc[i][self.t1c]))
 
     def load_t1_image(self, i):
-        print(self.data_path)
-        print(self.df.loc[i][self.t1])
-        print(self.data_path / self.df.loc[i][self.t1])
         return np.float32(load(self.data_path / self.df.loc[i][self.t1]))
 
     def load_segm(self, i):
