@@ -7,7 +7,7 @@ from tqdm import tqdm
 from skimage.measure import label
 
 from dpipe.commands import load_from_folder
-from dpipe.io import save_json, load_pred, save
+from dpipe.io import save_json, load_pred, save, load
 from dpipe.im.metrics import dice_score
 from dpipe.im.box import get_centered_box
 from dpipe.im.shape_ops import crop_to_box
@@ -145,33 +145,45 @@ def evaluate_individual_metrics_with_froc_no_pred_lits(load_y, load_x, load_spac
         
         
 def evaluate_individual_metrics_with_froc_no_pred_with_crops(load_y, load_x, predict, predict_logit, metrics: dict, test_ids, 
-                                                             results_path, x_patch_size, pred_patch_stride, 
-                                                             random_state, n_repeats, exist_ok=False):
+                                                             spatial_boxes_path, results_path, n_repeats, exist_ok=False, 
+                                                             save_predictions=True, predictions_path='test_predictions'):
+    
     assert len(metrics) > 0, 'No metric provided'
     os.makedirs(results_path, exist_ok=exist_ok)
+    
+    spatial_boxes = load(spatial_boxes_path)
 
     results = defaultdict(dict)
     for identifier in tqdm(test_ids):
+        
         image = load_x(identifier)
         target = load_y(identifier)
-        high_lim = min([image.shape[i] for i in SPATIAL_DIMS]) // pred_patch_stride * pred_patch_stride
         
         for i in range(n_repeats):
-            crop_shape = np.array([random_state.randint(x_patch_size[0] // pred_patch_stride, 
-                                   high_lim // pred_patch_stride), ] * len(SPATIAL_DIMS)) * pred_patch_stride
-            center = sample_center_uniformly(image.shape, crop_shape, spatial_dims=SPATIAL_DIMS, random_state=random_state)
-            spatial_box = get_centered_box(center, crop_shape)
+            spatial_box = spatial_boxes[identifier + '_' + str(i)]
             image_cropped = crop_to_box(image, box=spatial_box, padding_values=np.min, axis=SPATIAL_DIMS)
             prediction = predict(image_cropped)
+            
+            if save_predictions:
+                output = os.path.join(predictions_path, f'{identifier}_{i}.npy')
+                save(prediction, output)
+            
             target_cropped = crop_to_box(target, box=spatial_box, padding_values=np.min, axis=SPATIAL_DIMS)
-
-            results['centers'][identifier + '_' + str(i)] = center
-            results['crop_shapes'][identifier + '_' + str(i)] = crop_shape
+            prediction_padded = np.zeros_like(image)
+            prediction_padded[..., spatial_box[0][-1]:spatial_box[1][-1]] = prediction
 
             for metric_name, metric in metrics.items():
                 if metric_name == 'froc_records':
                     logit = predict_logit(image_cropped)
                     results[metric_name][identifier + str(i)] = metric(target_cropped, prediction, logit)
+                elif metric_name == 'dice_score' or metric_name == 'sdice_score':
+                    try:
+                        results[metric_name][identifier + '_' + str(i)] = metric(target_cropped, prediction, identifier)
+                        results[metric_name + '_padded'][identifier + '_' + str(i)] = metric(target, prediction_padded, 
+                                                                                             identifier)
+                    except TypeError:
+                        results[metric_name][identifier + '_' + str(i)] = metric(target_cropped, prediction)
+                        results[metric_name + '_padded'][identifier + '_' + str(i)] = metric(target, prediction_padded)
                 else:
                     try:
                         results[metric_name][identifier + '_' + str(i)] = metric(target_cropped, prediction, identifier)
@@ -244,6 +256,86 @@ def evaluate_individual_metrics_probably_with_ids_no_pred_mc_dropout(load_y, loa
                     results[_id][agg_func_name] = agg_func(target, deterministic_prediction, _id)
                 except TypeError:
                     results[_id][agg_func_name] = agg_func(target, deterministic_prediction)
+
+    for agg_func_name in results[list(results.keys())[0]].keys():
+        result = {_id: results[_id][agg_func_name] for _id in results.keys()}
+        save_json(result, os.path.join(results_path, agg_func_name + '.json'), indent=0)
+      
+    
+    
+
+
+    for identifier in tqdm(test_ids):
+        
+        image = load_x(identifier)
+        target = load_y(identifier)
+        
+        for i in range(n_repeats):
+            spatial_box = spatial_boxes[identifier + '_' + str(i)]
+            image_cropped = crop_to_box(image, box=spatial_box, padding_values=np.min, axis=SPATIAL_DIMS)
+            prediction = predict(image_cropped)
+            
+            if save_predictions:
+                output = os.path.join(predictions_path, f'{identifier}_{i}.npy')
+                save(prediction, output)
+            
+            target_cropped = crop_to_box(target, box=spatial_box, padding_values=np.min, axis=SPATIAL_DIMS)
+            prediction_padded = np.zeros_like(image)
+            prediction_padded[..., spatial_box[0][-1]:spatial_box[1][-1]] = prediction
+
+            for metric_name, metric in metrics.items():
+                if metric_name == 'froc_records':
+                    logit = predict_logit(image_cropped)
+                    results[metric_name][identifier + str(i)] = metric(target_cropped, prediction, logit)
+                elif metric_name == 'dice_score' or metric_name == 'sdice_score':
+                    try:
+                        results[metric_name][identifier + '_' + str(i)] = metric(target_cropped, prediction, identifier)
+                        results[metric_name + '_padded'][identifier + '_' + str(i)] = metric(target, prediction_padded, 
+                                                                                             identifier)
+                    except TypeError:
+                        results[metric_name][identifier + '_' + str(i)] = metric(target_cropped, prediction)
+                        results[metric_name + '_padded'][identifier + '_' + str(i)] = metric(target, prediction_padded)
+                else:
+                    try:
+                        results[metric_name][identifier + '_' + str(i)] = metric(target_cropped, prediction, identifier)
+                    except TypeError:
+                        results[metric_name][identifier + '_' + str(i)] = metric(target_cropped, prediction)
+    
+        
+def evaluate_individual_metrics_probably_with_ids_no_pred_mc_dropout_with_crops(load_y, load_x, predict, predict_logit, 
+                                                                                predict_with_dropout, test_ids, 
+                                                                                spatial_boxes_path, n_repeats, 
+                                                                                results_path, agg_function, 
+                                                                                segm_functions: dict={}, exist_ok=False):
+    os.makedirs(results_path, exist_ok=exist_ok)
+
+    spatial_boxes = load(spatial_boxes_path)
+    results = defaultdict(dict)
+    for _id in tqdm(test_ids):
+        target = load_y(_id)
+        image = load_x(_id)
+        
+        for i in range(n_repeats):
+            spatial_box = spatial_boxes[_id + '_' + str(i)]
+            image_cropped = crop_to_box(image, box=spatial_box, padding_values=np.min, axis=SPATIAL_DIMS)
+#             deterministic_prediction = predict(image_cropped)
+            
+#             target_cropped = crop_to_box(target, box=spatial_box, padding_values=np.min, axis=SPATIAL_DIMS)
+#             prediction_padded = np.zeros_like(image)
+#             prediction_padded[..., spatial_box[0][-1]:spatial_box[1][-1]] = prediction
+    #         deterministic_prediction = predict(input_img)
+            ensemble_preds = predict_with_dropout(image_cropped)
+            results[_id] = agg_function(ensemble_preds)
+        
+#         for agg_func_name, agg_func in segm_functions.items():
+#             if agg_func_name == 'froc_records':
+#                 deterministic_logit = predict_logit(load_x(_id))
+#                 results[_id][agg_func_name] = agg_func(target, deterministic_prediction, deterministic_logit)
+#             else:
+#                 try:
+#                     results[_id][agg_func_name] = agg_func(target, deterministic_prediction, _id)
+#                 except TypeError:
+#                     results[_id][agg_func_name] = agg_func(target, deterministic_prediction)
 
     for agg_func_name in results[list(results.keys())[0]].keys():
         result = {_id: results[_id][agg_func_name] for _id in results.keys()}
