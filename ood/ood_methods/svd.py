@@ -14,20 +14,20 @@ def get_spectrum(feature_map):
     return normalized_S
 
 
-def get_ood_scores_from_spectrum(predictions_path, results_path):
+def get_ood_scores_from_spectrum(test_ids, train_predictions_path, spectrum_folder, results_path, exist_ok=False):
     results = defaultdict(dict)
     
-    train_ids = load(os.path.join(predictions_path, 'train_ids.json'))
-    train_matrix = np.stack([load(os.path.join(predictions_path, f'test_predictions/{uid}.npy')) 
+    train_ids = load(os.path.join(train_predictions_path, 'train_ids.json'))
+    train_matrix = np.stack([load(os.path.join(train_predictions_path, spectrum_folder, f'{uid}.npy')) 
                              for uid in train_ids])
     
-    test_ids = load(os.path.join(predictions_path, 'test_ids.json'))
     for uid in test_ids:
-        spectrum = load(os.path.join(predictions_path, f'test_predictions/{uid}.npy'))
+        spectrum = load(os.path.join(spectrum_folder, f'{uid}.npy'))
         distances = np.linalg.norm(train_matrix - spectrum, axis=1)
         results['min_distance'][uid] = min(distances)
         results['mean_distance'][uid] = np.mean(distances)
         results['distance_from_center'][uid] = np.linalg.norm((train_matrix.mean(axis=0) - spectrum))
-        
+    
+    os.makedirs(results_path, exist_ok=exist_ok)
     for metric_name, result in results.items():
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
