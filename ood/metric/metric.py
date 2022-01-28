@@ -260,47 +260,7 @@ def evaluate_individual_metrics_probably_with_ids_no_pred_mc_dropout(load_y, loa
     for agg_func_name in results[list(results.keys())[0]].keys():
         result = {_id: results[_id][agg_func_name] for _id in results.keys()}
         save_json(result, os.path.join(results_path, agg_func_name + '.json'), indent=0)
-      
-    
-    
 
-
-    for identifier in tqdm(test_ids):
-        
-        image = load_x(identifier)
-        target = load_y(identifier)
-        
-        for i in range(n_repeats):
-            spatial_box = spatial_boxes[identifier + '_' + str(i)]
-            image_cropped = crop_to_box(image, box=spatial_box, padding_values=np.min, axis=SPATIAL_DIMS)
-            prediction = predict(image_cropped)
-            
-            if save_predictions:
-                output = os.path.join(predictions_path, f'{identifier}_{i}.npy')
-                save(prediction, output)
-            
-            target_cropped = crop_to_box(target, box=spatial_box, padding_values=np.min, axis=SPATIAL_DIMS)
-            prediction_padded = np.zeros_like(image)
-            prediction_padded[..., spatial_box[0][-1]:spatial_box[1][-1]] = prediction
-
-            for metric_name, metric in metrics.items():
-                if metric_name == 'froc_records':
-                    logit = predict_logit(image_cropped)
-                    results[metric_name][identifier + str(i)] = metric(target_cropped, prediction, logit)
-                elif metric_name == 'dice_score' or metric_name == 'sdice_score':
-                    try:
-                        results[metric_name][identifier + '_' + str(i)] = metric(target_cropped, prediction, identifier)
-                        results[metric_name + '_padded'][identifier + '_' + str(i)] = metric(target, prediction_padded, 
-                                                                                             identifier)
-                    except TypeError:
-                        results[metric_name][identifier + '_' + str(i)] = metric(target_cropped, prediction)
-                        results[metric_name + '_padded'][identifier + '_' + str(i)] = metric(target, prediction_padded)
-                else:
-                    try:
-                        results[metric_name][identifier + '_' + str(i)] = metric(target_cropped, prediction, identifier)
-                    except TypeError:
-                        results[metric_name][identifier + '_' + str(i)] = metric(target_cropped, prediction)
-    
         
 def evaluate_individual_metrics_probably_with_ids_no_pred_mc_dropout_with_crops(load_y, load_x, predict, predict_logit, 
                                                                                 predict_with_dropout, test_ids, 
