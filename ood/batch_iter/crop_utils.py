@@ -4,13 +4,14 @@ import numpy as np
 from tqdm import tqdm
 
 from dpipe.im.box import get_centered_box
-from dpipe.io import save_json
+from dpipe.im.shape_ops import crop_to_box
+from dpipe.io import save_json, load
 from .pipeline import sample_center_uniformly, SPATIAL_DIMS
 
 
 def get_spatial_boxes(test_ids, n_repeats, x_patch_size, pred_patch_stride, load_x, random_state, high_eps=50, 
                       results_path='spatial_boxes.json'):
-    
+        
     low_eps = x_patch_size[2]
     pred_patch_stride = pred_patch_stride[2]
 
@@ -30,3 +31,17 @@ def get_spatial_boxes(test_ids, n_repeats, x_patch_size, pred_patch_stride, load
             results[identifier + '_' + str(i)] = spatial_box
 
     save_json(results, results_path, indent=0)
+   
+    
+def load_cropped_image(uid, load_x, spatial_boxes_path):
+    spatial_boxes = load(spatial_boxes_path)
+    spatial_box = spatial_boxes[uid]
+    image = load_x(uid.split('_')[0])
+    image_cropped = crop_to_box(image, box=spatial_box, padding_values=np.min, axis=SPATIAL_DIMS)
+    return image_cropped
+
+
+def get_padded_prediction(prediction, target_full, uid, spatial_box):
+    prediction_full = np.zeros_like(target_full)
+    prediction_full[..., spatial_box[0][-1]: spatial_box[1][-1]] = prediction
+    return prediction_full

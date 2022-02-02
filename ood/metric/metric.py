@@ -14,6 +14,7 @@ from dpipe.im.shape_ops import crop_to_box
 from dpipe.itertools import zip_equal
 from ood.utils import volume2diameter, get_pred
 from ood.batch_iter.pipeline import SPATIAL_DIMS, sample_center_uniformly
+from ood.batch_iter.crop_utils import get_padded_prediction
 
 
 def aggregate_metric_probably_with_ids(xs, ys, ids, metric, aggregate_fn=np.mean):
@@ -142,57 +143,44 @@ def evaluate_individual_metrics_with_froc_no_pred_lits(load_y, load_x, load_spac
     for metric_name, result in results.items():
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
 '''
-        
-        
-def evaluate_individual_metrics_with_froc_no_pred_with_crops(load_y, load_x, predict, predict_logit, metrics: dict, test_ids, 
-                                                             spatial_boxes_path, results_path, n_repeats, exist_ok=False, 
-                                                             save_predictions=True, predictions_path='test_predictions'):
-    
+
+
+def evaluate_individual_metrics_with_froc_with_crops(load_x, load_y_full, predictions_path, predict_logit, 
+                                                     metrics: dict, spatial_boxes_path, results_path, exist_ok=False):
     assert len(metrics) > 0, 'No metric provided'
     os.makedirs(results_path, exist_ok=exist_ok)
     
     spatial_boxes = load(spatial_boxes_path)
 
     results = defaultdict(dict)
-    for identifier in tqdm(test_ids):
-        
-        image = load_x(identifier)
-        target = load_y(identifier)
-        
-        for i in range(n_repeats):
-            spatial_box = spatial_boxes[identifier + '_' + str(i)]
-            image_cropped = crop_to_box(image, box=spatial_box, padding_values=np.min, axis=SPATIAL_DIMS)
-            prediction = predict(image_cropped)
-            
-            if save_predictions:
-                output = os.path.join(predictions_path, f'{identifier}_{i}.npy')
-                save(prediction, output)
-            
-            target_cropped = crop_to_box(target, box=spatial_box, padding_values=np.min, axis=SPATIAL_DIMS)
-            prediction_padded = np.zeros_like(image)
-            prediction_padded[..., spatial_box[0][-1]:spatial_box[1][-1]] = prediction
+    for identifier, prediction in tqdm(load_from_folder(predictions_path)):
+        base_identifier = identifier.split('_')[0]
+        target_full = load_y_full(base_identifier)
+        spatial_box = spatial_boxes[identifier]
+        target = crop_to_box(target_full, box=spatial_box, padding_values=np.min, axis=SPATIAL_DIMS)
+        prediction_full = get_padded_prediction(prediction, target_full, identifier, spatial_box)
 
-            for metric_name, metric in metrics.items():
-                if metric_name == 'froc_records':
-                    logit = predict_logit(image_cropped)
-                    results[metric_name][identifier + str(i)] = metric(target_cropped, prediction, logit)
-                elif metric_name == 'dice_score' or metric_name == 'sdice_score':
-                    try:
-                        results[metric_name][identifier + '_' + str(i)] = metric(target_cropped, prediction, identifier)
-                        results[metric_name + '_padded'][identifier + '_' + str(i)] = metric(target, prediction_padded, 
-                                                                                             identifier)
-                    except TypeError:
-                        results[metric_name][identifier + '_' + str(i)] = metric(target_cropped, prediction)
-                        results[metric_name + '_padded'][identifier + '_' + str(i)] = metric(target, prediction_padded)
-                else:
-                    try:
-                        results[metric_name][identifier + '_' + str(i)] = metric(target_cropped, prediction, identifier)
-                    except TypeError:
-                        results[metric_name][identifier + '_' + str(i)] = metric(target_cropped, prediction)
+        for metric_name, metric in metrics.items():
+            if metric_name == 'froc_records':
+                logit = predict_logit(load_x(identifier))
+                results[metric_name][identifier] = metric(target, prediction, logit)
+            else:
+                try:
+                    results[metric_name][identifier] = metric(target, prediction, base_identifier)
+                except TypeError:
+                    results[metric_name][identifier] = metric(target, prediction)
+        
+        # calculate segmentation metrics for padded images
+        for metric_name, metric in metrics.items():
+            if metric_name == 'dice_score' or metric_name == 'sdice_score':
+                try:
+                    results[f'{metric_name}_padded'][identifier] = metric(target_full, prediction_full, base_identifier)
+                except TypeError:
+                    results[f'{metric_name}_padded'][identifier] = metric(target_full, prediction_full)
 
     for metric_name, result in results.items():
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
-        
+
 
 def evaluate_individual_metrics_probably_with_ids(load_y_true, metrics: dict, predictions_path, results_path,
                                                   exist_ok=False):
