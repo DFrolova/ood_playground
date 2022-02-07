@@ -25,6 +25,7 @@ def get_ood_scores_from_spectrum(test_ids, train_predictions_path, spectrum_fold
         spectrum = load(os.path.join(spectrum_folder, f'{uid}.npy'))
         distances = np.linalg.norm(train_matrix - spectrum, axis=1)
         results['min_distance'][uid] = min(distances)
+        results['5_percentile'][uid] = np.percentile(distances, 5)
         results['mean_distance'][uid] = np.mean(distances)
         results['distance_from_center'][uid] = np.linalg.norm((train_matrix.mean(axis=0) - spectrum))
     
