@@ -273,7 +273,7 @@ def evaluate_individual_metrics_probably_with_ids_no_pred_mc_dropout_with_crops(
 #             prediction_padded[..., spatial_box[0][-1]:spatial_box[1][-1]] = prediction
     #         deterministic_prediction = predict(input_img)
             ensemble_preds = predict_with_dropout(image_cropped)
-            results[_id] = agg_function(ensemble_preds)
+            results[_id + '_' + str(i)] = agg_function(ensemble_preds)
         
 #         for agg_func_name, agg_func in segm_functions.items():
 #             if agg_func_name == 'froc_records':
