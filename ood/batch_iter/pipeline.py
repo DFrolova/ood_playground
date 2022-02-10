@@ -36,6 +36,17 @@ def extract_patch(inputs, x_patch_size, y_patch_size, spatial_dims=SPATIAL_DIMS)
     return x_patch, y_patch
 
 
+def extract_patch_of_slices(inputs, x_patch_size, y_patch_size, spatial_dims=SPATIAL_DIMS):
+    x, y, center = inputs
+
+    x_spatial_box = get_centered_box(center, x_patch_size)
+    y_spatial_box = get_centered_box(center, y_patch_size)
+
+    x_patch = x[..., x_spatial_box[0][-1] : x_spatial_box[1][-1]]
+    y_patch = y[..., y_spatial_box[0][-1] : y_spatial_box[1][-1]]
+    return x_patch, y_patch
+
+
 def center_choice(inputs, y_patch_size, random_state: np.random.RandomState, nonzero_fraction=0.5):
     x, y, centers = inputs
 

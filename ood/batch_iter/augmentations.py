@@ -19,7 +19,7 @@ def apply_augm_pipeline(inputs, pipeline, p, random_state: np.random.RandomState
 def augm_pipeline_3d_tumor_sampling(inputs, x_patch_size, p, random_state: np.random.RandomState):
     outputs = inputs
     if random_state.rand() < p:
-        outputs = shift_center(outputs, max_shift=x_patch_size//2, random_state=random_state)
+        outputs = shift_center_slicewise(outputs, max_shift=x_patch_size // 2, random_state=random_state)
     return outputs
 
 
@@ -30,6 +30,17 @@ def shift_center(inputs, max_shift, random_state: np.random.RandomState):
     high = np.minimum(spatial_shape - max_shift, center + max_shift + 1)
     new_center = random_state.randint(low=low, high=high, size=len(SPATIAL_DIMS))
     return x, y, new_center
+
+
+def shift_center_slicewise(inputs, max_shift, random_state: np.random.RandomState):
+    x, y, center = inputs
+    z_center = center[-1]
+    z_spatial_shape = np.array(x.shape)[list(SPATIAL_DIMS)][-1]
+    low = np.maximum(max_shift, z_center - max_shift)
+    high = np.minimum(z_spatial_shape - max_shift, z_center + max_shift + 1)
+    new_z_center = random_state.randint(low=low, high=high, size=1)
+    center[-1] = new_z_center
+    return x, y, center
 
 
 def augm_pipeline_3d(inputs, shape, crop_shape, angle_limit, p, random_state: np.random.RandomState):
