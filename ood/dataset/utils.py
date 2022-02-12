@@ -1,9 +1,11 @@
 import numpy as np
 from skimage import measure
+from skimage.segmentation import flood
 
 from dpipe.dataset import Dataset
 from dpipe.dataset.wrappers import Proxy
-from dpipe.im.shape_ops import zoom
+from dpipe.im.shape_ops import zoom, crop_to_box, pad
+from dpipe.im.box import mask2bounding_box
 
 
 class Change(Proxy):
@@ -49,6 +51,40 @@ class Rescale3D(Change):
         probas = np.array([1 / len_cc for len_cc in lengths_cc]) / n_labels
         broadcated_probas = np.repeat(probas, lengths_cc)[:, None]
         return np.hstack((np.vstack(result_centers), broadcated_probas))
+    
+    
+class CropToLungs(Change):
+    def __init__(self, shadowed, lungs_threshold=-600, lungs_fraction_threshold=0.005):
+        super().__init__(shadowed)
+        self.lungs_threshold = lungs_threshold
+        self.lungs_fraction_threshold = lungs_fraction_threshold
+        
+    def _bbox(self, i):
+        x = self._shadowed.load_image(i)
+        # find lungs
+        lungs_mask = x < self.lungs_threshold
+        # find air
+        air_mask = flood(pad(lungs_mask, padding=1, axis=(0, 1), padding_values=True),
+                         seed_point=(0, 0, 0))[1:-1, 1:-1]
+        lungs_mask = lungs_mask & ~air_mask
+
+        # filter lungs as biggest connected components
+        labels, n_labels = measure.label(lungs_mask, connectivity=2, return_num=True)
+        result_centers = [np.argwhere(labels == label) for label in range(1, n_labels + 1)]
+        fractions_cc = np.array([len(cc) for cc in result_centers]) / np.prod(lungs_mask.shape)
+
+        lungs_mask_final = np.zeros_like(lungs_mask, dtype=bool)
+        for i, frac in enumerate(fractions_cc):
+            if frac > self.lungs_fraction_threshold:
+                lungs_mask_final = lungs_mask_final | labels == (i + 1)
+        box = mask2bounding_box(lungs_mask_final)
+        return box
+
+    def _change(self, x, i):
+        return crop_to_box(x, self._bbox(i))
+
+    def load_orig_image(self, i):
+        return self._shadowed.load_image(i)
 
 
 def scale_mri(image: np.ndarray, q_min: int = 1, q_max: int = 99) -> np.ndarray:
@@ -58,7 +94,7 @@ def scale_mri(image: np.ndarray, q_min: int = 1, q_max: int = 99) -> np.ndarray:
     return np.float32(image)
 
 
-def scale_ct(x: np.ndarray, min_value: float = -1200, max_value: float = 600) -> np.ndarray:
+def scale_ct(x: np.ndarray, min_value: float = -1200, max_value: float = 300) -> np.ndarray:
     x = np.clip(x, a_min=min_value, a_max=max_value)
     x -= np.min(x)
     x /= np.max(x)

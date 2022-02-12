@@ -44,6 +44,7 @@ def extract_patch_of_slices(inputs, x_patch_size, y_patch_size, spatial_dims=SPA
 
     x_patch = x[..., x_spatial_box[0][-1] : x_spatial_box[1][-1]]
     y_patch = y[..., y_spatial_box[0][-1] : y_spatial_box[1][-1]]
+    print('Patch shapes:', x_patch.shape, y_patch.shape)
     return x_patch, y_patch
 
 
