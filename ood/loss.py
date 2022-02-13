@@ -19,3 +19,19 @@ def cosine_lr_schedule_fn(epoch, lr_max=1e-2, lr_min=1e-6, last_linear_epoch=10,
 
 def find_lr_schedule_fn(epoch, lr_max=1e-2, lr_min=1e-6, n_epochs=100):
     return lr_min * (lr_max / lr_min) ** (epoch / n_epochs)
+
+
+def focal_tversky_loss(proba, target, spatial_dims, beta, gamma):
+    intersection = torch.sum(proba * target, dim=spatial_dims)
+    tp = torch.sum(proba ** 2 * target, dim=spatial_dims)
+    fp = torch.sum(proba ** 2 * (1 - target), dim=spatial_dims)
+    fn = torch.sum((1 - proba ** 2) * target, dim=spatial_dims)
+    tversky_index = intersection / (tp + beta * fn + (1 - beta) * fp + 1)
+    loss = (1 - tversky_index) ** gamma
+    return loss.mean()
+
+
+def focal_tversky_loss_with_nans(proba, target, spatial_dims, beta, gamma):
+    proba = torch.where(~torch.isnan(target), proba, torch.tensor(0).to(proba))
+    target = torch.nan_to_num(target)
+    return focal_tversky_loss(proba, target, spatial_dims, beta, gamma)

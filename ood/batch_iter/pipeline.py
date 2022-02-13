@@ -62,6 +62,12 @@ def center_choice(inputs, y_patch_size, random_state: np.random.RandomState, non
     return x, y, center
 
 
+def get_random_patch_of_slices(inputs, z_patch_size, random_state: np.random.RandomState):
+    x, y = inputs
+    z_min = random_state.randint(low=0, high=x.shape[-1] - z_patch_size)
+    return x[..., z_min:z_min + z_patch_size], y[..., z_min:z_min + z_patch_size]
+
+
 # ### 2D pipeline: ###
 
 
