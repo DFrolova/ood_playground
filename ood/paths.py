@@ -28,6 +28,16 @@ GAMMA_KNIFE_BRAIN_PATH = choose_root(
     '/',  # TODO: avoiding `FileNotFoundError`
 )
 
+TASK4_HIPPO_PATH = choose_root(
+    '/shared/data/Task04_Hippocampus/',
+    '/',  # TODO: avoiding `FileNotFoundError`
+)
+
+HARP_DATA_PATH = choose_root(
+    '/shared/data/HarP/',
+    '/',  # TODO: avoiding `FileNotFoundError`
+)
+
 ENSEMBLE_MODELS_PATH_CC359 = choose_root(
     '/shared/experiments/ood_playground/cc359/hippo_segm/ensemble/',
     '/',  # TODO: avoiding `FileNotFoundError`
