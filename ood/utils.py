@@ -29,6 +29,10 @@ def choose_root(*paths: PathLike) -> Path:
     raise FileNotFoundError('No appropriate root found.')
 
 
+def get_lib_root_path():
+    return Path('/'.join(os.path.abspath(__file__).split('/')[:-2]))
+
+
 def sdice(a, b, spacing, tolerance):
     surface_distances = sdsc.compute_surface_distances(a, b, spacing)
     return sdsc.compute_surface_dice_at_tolerance(surface_distances, tolerance)

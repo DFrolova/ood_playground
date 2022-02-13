@@ -10,7 +10,7 @@ from neurodata.lidc import LIDC, LUNA16 as LUNA16Neurodata
 
 class LUNA16(Proxy):
     def __init__(self):
-        super().__init__(LIDC()) # TODO change to luna
+        super().__init__(LIDC())
 
     def load_image(self, i):
         return np.float32(self.image(i))

@@ -2,7 +2,6 @@ import numpy as np
 from skimage import measure
 from skimage.segmentation import flood
 
-from dpipe.dataset import Dataset
 from dpipe.dataset.wrappers import Proxy
 from dpipe.im.shape_ops import zoom, crop_to_box, pad
 from dpipe.im.box import mask2bounding_box
@@ -94,7 +93,7 @@ def scale_mri(image: np.ndarray, q_min: int = 1, q_max: int = 99) -> np.ndarray:
     return np.float32(image)
 
 
-def scale_ct(x: np.ndarray, min_value: float = -1200, max_value: float = 300) -> np.ndarray:
+def scale_ct(x: np.ndarray, min_value: float = -1350, max_value: float = 300) -> np.ndarray:
     x = np.clip(x, a_min=min_value, a_max=max_value)
     x -= np.min(x)
     x /= np.max(x)
