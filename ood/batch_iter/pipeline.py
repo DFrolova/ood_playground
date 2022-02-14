@@ -44,7 +44,6 @@ def extract_patch_of_slices(inputs, x_patch_size, y_patch_size, spatial_dims=SPA
 
     x_patch = x[..., x_spatial_box[0][-1] : x_spatial_box[1][-1]]
     y_patch = y[..., y_spatial_box[0][-1] : y_spatial_box[1][-1]]
-    print('Patch shapes:', x_patch.shape, y_patch.shape)
     return x_patch, y_patch
 
 
@@ -64,7 +63,7 @@ def center_choice(inputs, y_patch_size, random_state: np.random.RandomState, non
 
 def get_random_patch_of_slices(inputs, z_patch_size, random_state: np.random.RandomState):
     x, y = inputs
-    z_min = random_state.randint(low=0, high=x.shape[-1] - z_patch_size)
+    z_min = random_state.randint(low=0, high=max(1, x.shape[-1] - z_patch_size))
     return x[..., z_min:z_min + z_patch_size], y[..., z_min:z_min + z_patch_size]
 
 

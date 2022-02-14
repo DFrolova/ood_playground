@@ -76,6 +76,12 @@ class CropToLungs(Change):
         for i, frac in enumerate(fractions_cc):
             if frac > self.lungs_fraction_threshold:
                 lungs_mask_final = lungs_mask_final | labels == (i + 1)
+                
+        if lungs_mask_final.sum() == 0:
+            print(fractions_cc)
+            print('Warning: no lungs were found!')
+            lungs_mask_final[0, 0, 0] = lungs_mask_final[-1, -1, -1] = True
+            
         box = mask2bounding_box(lungs_mask_final)
         return box
 
