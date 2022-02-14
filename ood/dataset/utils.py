@@ -19,7 +19,7 @@ class Change(Proxy):
 
 
 class Rescale3D(Change):
-    def __init__(self, shadowed, new_voxel_spacing=1., order=3):
+    def __init__(self, shadowed, new_voxel_spacing=1., order=1):
         super().__init__(shadowed)
         self.new_voxel_spacing = np.broadcast_to(new_voxel_spacing, 3).astype(float)
         self.order = order
@@ -68,18 +68,18 @@ class CropToLungs(Change):
         lungs_mask = lungs_mask & ~air_mask
 
         # filter lungs as biggest connected components
-        labels, n_labels = measure.label(lungs_mask, connectivity=2, return_num=True)
-        result_centers = [np.argwhere(labels == label) for label in range(1, n_labels + 1)]
-        fractions_cc = np.array([len(cc) for cc in result_centers]) / np.prod(lungs_mask.shape)
+        lbls, n = measure.label(lungs_mask, connectivity=3, return_num=True)
+        cc_fractions = np.array([np.sum(lbls == l) for l in range(1, n + 1)]) / np.prod(lungs_mask.shape)
+        lbls_flt = np.argsort(cc_fractions)[::-1][:3]
 
         lungs_mask_final = np.zeros_like(lungs_mask, dtype=bool)
-        for i, frac in enumerate(fractions_cc):
-            if frac > self.lungs_fraction_threshold:
-                lungs_mask_final = lungs_mask_final | labels == (i + 1)
-                
-        if lungs_mask_final.sum() == 0:
-            print(fractions_cc)
-            print('Warning: no lungs were found!')
+        for i in lbls_flt:
+            msk = (lbls == (i + 1))
+            if np.sum(msk) > self.lungs_fraction_threshold:
+                lungs_mask_final += msk
+
+        if not lungs_mask_final.any():
+            print(f'Warning: no lungs were found! Case: {i}', flush=True)
             lungs_mask_final[0, 0, 0] = lungs_mask_final[-1, -1, -1] = True
             
         box = mask2bounding_box(lungs_mask_final)
