@@ -67,6 +67,15 @@ def get_random_patch_of_slices(inputs, z_patch_size, random_state: np.random.Ran
     return x[..., z_min:z_min + z_patch_size], y[..., z_min:z_min + z_patch_size]
 
 
+def center_crop(inputs, crop_shape=(256, 320)):
+    x, y = inputs
+    crop_shape = np.array(crop_shape)
+    diff = np.maximum(x.shape[:-1] - crop_shape, 0)
+    start = diff // 2
+    end = x.shape[:-1] - diff // 2 - diff % 2
+    return x[start[0] : end[0], start[1] : end[1], ...], y[start[0] : end[0], start[1] : end[1], ...]
+
+
 # ### 2D pipeline: ###
 
 

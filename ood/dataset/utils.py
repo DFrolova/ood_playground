@@ -19,7 +19,7 @@ class Change(Proxy):
 
 
 class Rescale3D(Change):
-    def __init__(self, shadowed, new_voxel_spacing=1., order=1):
+    def __init__(self, shadowed, new_voxel_spacing=1., order=3):
         super().__init__(shadowed)
         self.new_voxel_spacing = np.broadcast_to(new_voxel_spacing, 3).astype(float)
         self.order = order
@@ -67,22 +67,11 @@ class CropToLungs(Change):
                          seed_point=(0, 0, 0))[1:-1, 1:-1]
         lungs_mask = lungs_mask & ~air_mask
 
-        # filter lungs as biggest connected components
-        lbls, n = measure.label(lungs_mask, connectivity=3, return_num=True)
-        cc_fractions = np.array([np.sum(lbls == l) for l in range(1, n + 1)]) / np.prod(lungs_mask.shape)
-        lbls_flt = np.argsort(cc_fractions)[::-1][:3]
-
-        lungs_mask_final = np.zeros_like(lungs_mask, dtype=bool)
-        for i in lbls_flt:
-            msk = (lbls == (i + 1))
-            if np.sum(msk) > self.lungs_fraction_threshold:
-                lungs_mask_final += msk
-
-        if not lungs_mask_final.any():
+        if not lungs_mask.any():
             print(f'Warning: no lungs were found! Case: {i}', flush=True)
-            lungs_mask_final[0, 0, 0] = lungs_mask_final[-1, -1, -1] = True
+            lungs_mask[0, 0, 0] = lungs_mask[-1, -1, -1] = True
             
-        box = mask2bounding_box(lungs_mask_final)
+        box = mask2bounding_box(lungs_mask)
         return box
 
     def _change(self, x, i):
@@ -90,7 +79,7 @@ class CropToLungs(Change):
 
     def load_orig_image(self, i):
         return self._shadowed.load_image(i)
-
+    
 
 def scale_mri(image: np.ndarray, q_min: int = 1, q_max: int = 99) -> np.ndarray:
     image = np.clip(np.float32(image), *np.percentile(np.float32(image), [q_min, q_max]))
