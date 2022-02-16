@@ -3,12 +3,13 @@ from collections import defaultdict
 from typing import Sequence, Callable
 
 import numpy as np
+import pandas as pd
 from tqdm import tqdm
 from skimage.measure import label
 
 from dpipe.commands import load_from_folder
-from dpipe.io import save_json, load_pred, save, load
-from dpipe.im.metrics import dice_score
+from dpipe.io import save_json, load_pred, save, load, load_json
+from dpipe.im.metrics import dice_score, fraction
 from dpipe.im.box import get_centered_box
 from dpipe.im.shape_ops import crop_to_box
 from dpipe.itertools import zip_equal
@@ -363,3 +364,77 @@ def froc_records(segm, pred, logit):
         records.append(record)
 
     return records
+
+
+def exp2froc_df(exp_path, n_val=1, specific_ids=None):
+    """Constructs pandas DataFrame with froc data from all predictions in ``exp_path``."""
+    dfs = []
+    for n in range(n_val):
+        froc_path = os.path.join(exp_path, f'experiment_{n}', 'test_metrics', 'froc_records.json')
+        froc_dicts = load_json(froc_path)
+
+        for _id in froc_dicts.keys():
+            if specific_ids is None:
+                [d.update({'id': _id}) for d in froc_dicts[_id]]
+                dfs.append(pd.DataFrame.from_records(froc_dicts[_id]))
+            else:
+                if _id in specific_ids:
+                    [d.update({'id': _id}) for d in froc_dicts[_id]]
+                    dfs.append(pd.DataFrame.from_records(froc_dicts[_id]))
+
+    df = pd.concat(dfs)
+    return df
+
+
+def get_froc(df, thresholds=None, dice_th=0, hit_stat='hit_stat', self_stat='self_stat'):
+    """Collects necessary data for building froc for experiments"""
+    if thresholds is None:
+        thresholds = np_sigmoid(np.linspace(0, 5, num=51))
+
+    precision, recall, total_fp, avg_dice, std_dice = [], [], [], [], []
+
+    for th in thresholds:
+        conf_dict = {'tp': 0, 'fp': 0, 'fn': 0}
+
+        th_df = df[df[self_stat] >= th]
+        target_df = th_df[th_df['is_tum']]
+        pred_df = th_df[~th_df['is_tum']]
+
+        conf_dict['fp'] = len(pred_df[(pred_df['hit_dice'] <= dice_th) & (pred_df[self_stat] > th)])
+
+        conf_dict['tp'] = len(target_df[(target_df['hit_dice'] > dice_th) & (target_df[hit_stat] >= th)])
+
+        conf_dict['fn'] = len(target_df[(target_df['hit_dice'] <= dice_th) | (target_df[hit_stat] < th)])
+
+        local_dices = target_df['hit_dice'][(target_df['hit_dice'] > dice_th) & (target_df[hit_stat] >= th)]
+
+        precision.append(fraction(conf_dict['tp'], conf_dict['tp'] + conf_dict['fp']))
+        recall.append(fraction(conf_dict['tp'], conf_dict['tp'] + conf_dict['fn']))
+        total_fp.append(conf_dict['fp'])
+        avg_dice.append(np.mean(local_dices))
+        std_dice.append(np.std(local_dices))
+
+    return {'precision': precision, 'recall': recall, 'totalFP': total_fp, 'avg_dice': avg_dice, 'std_dice': std_dice}
+
+
+def get_size_df(df, size='small'):
+    """Takes rows from DataFrame with specified lesion size"""
+    if size == 'total':
+        return df
+    else:
+        target_df = df[df['is_tum']]
+        pred_df = df[~df['is_tum']]
+
+        target_size_df = target_df[target_df['size'] == size]
+        pred_size_df = pred_df[pred_df['size'] == size]
+
+        size_df = pd.concat([target_size_df, pred_size_df])
+
+        for index in target_size_df.index:
+            _id, obj, hit_obj = target_size_df[['id', 'obj', 'hit_obj']].loc[index]
+
+            if hit_obj:
+                linked_predict = df[(df.id == _id) & (df.hit_obj == obj)]
+                size_df = pd.concat([size_df, linked_predict])
+
+        return size_df

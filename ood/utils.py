@@ -50,3 +50,8 @@ def skip_calculating_metrics(**args):
 
 def volume2diameter(volume):
     return (6 * volume / np.pi) ** (1 / 3)
+
+
+def np_sigmoid(x):
+    """Applies sigmoid function to the incoming value(-s)."""
+    return 1 / (1 + np.exp(-x))
