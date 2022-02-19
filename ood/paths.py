@@ -44,6 +44,6 @@ ENSEMBLE_MODELS_PATH_CC359 = choose_root(
 )
 
 ENSEMBLE_MODELS_PATH_LIDC = choose_root(
-    '/shared/experiments/ood_playground/luna/',
+    '/shared/experiments/ood_playground/luna/luna/',
     '/',  # TODO: avoiding `FileNotFoundError`
 )
