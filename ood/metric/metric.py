@@ -104,32 +104,15 @@ def evaluate_individual_metrics_with_froc_no_pred(load_y, load_x, predict, predi
     for metric_name, result in results.items():
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
         
-'''       
-def evaluate_individual_metrics_with_froc_no_pred_lits(load_y, load_x, load_spacing, load_slice_location, predict, 
-                                                       predict_logit, metrics: dict, test_ids,
-                                                       results_path, predictions_path=None, exist_ok=False):
+        
+def evaluate_individual_metrics_with_froc_no_logits_no_target(load_x, metrics: dict, predict_logit,
+                                         predictions_path, results_path, exist_ok=False):
     assert len(metrics) > 0, 'No metric provided'
     os.makedirs(results_path, exist_ok=exist_ok)
-    
-    if predictions_path is None:
-        save_predictions = False
-    else:
-        save_predictions = True
-        os.makedirs(predictions_path, exist_ok=exist_ok)
 
     results = defaultdict(dict)
-    for identifier in tqdm(test_ids):
-        pixel_spacing = load_spacing(identifier)
-        if load_slice_location is None:
-            slices_location = None
-        else:
-            slices_location = load_slice_location(identifier)
-        target = load_y(identifier)
-        prediction = predict(load_x(identifier), pixel_spacing=pixel_spacing, slices_location=slices_location)
-        
-        if save_predictions:
-            output_file_path = os.path.join(predictions_path, f'{identifier}.npy.gz')
-            save(prediction, output_file_path, compression=9)
+    for identifier, prediction in tqdm(load_from_folder(predictions_path)):
+        target = np.zeros_like(prediction)
 
         for metric_name, metric in metrics.items():
             if metric_name == 'froc_records':
@@ -143,8 +126,7 @@ def evaluate_individual_metrics_with_froc_no_pred_lits(load_y, load_x, load_spac
 
     for metric_name, result in results.items():
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
-'''
-
+        
 
 def evaluate_individual_metrics_with_froc_with_crops(load_x, load_y_full, predictions_path, predict_logit, 
                                                      metrics: dict, spatial_boxes_path, results_path, exist_ok=False):
