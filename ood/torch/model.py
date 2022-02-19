@@ -46,3 +46,26 @@ def get_resizing_features_modules(ndim: int, resize_features_to: str):
         resize_features_to__options = ('x1', 'x2', 'x4', 'x8', 'x16')
         raise ValueError(f'`resize_features_to` should be in {resize_features_to__options}. '
                          f'However, {resize_features_to} is given.')
+        
+        
+def enable_dropout(model: nn.Module):
+    """ Function to enable the dropout layers during test-time """
+    for m in model.modules():
+        if m.__class__.__name__.startswith('Dropout'):
+            m.train()
+       
+       
+def inference_step_mc_dropout(*inputs: np.ndarray, architecture: nn.Module, activation: Callable = identity, 
+                              amp: bool = False) -> np.ndarray:
+    """
+    Returns the prediction for the given ``inputs`` with all dropout layers turned to a train mode.
+    Notes
+    -----
+    Note that both input and output are **not** of type ``torch.Tensor`` - the conversion
+    to and from ``torch.Tensor`` is made inside this function.
+    """
+    architecture.eval()
+    enable_dropout(architecture)
+    with torch.no_grad():
+        with torch.cuda.amp.autocast(amp or torch.is_autocast_enabled()):
+            return to_np(activation(architecture(*sequence_to_var(*inputs, device=architecture))))
