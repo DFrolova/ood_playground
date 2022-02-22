@@ -68,7 +68,7 @@ class CropToLungs(Change):
         lungs_mask = lungs_mask & ~air_mask
 
         if not lungs_mask.any():
-            print(f'Warning: no lungs were found! Case: {i}', flush=True)
+#             print(f'Warning: no lungs were found! Case: {i}', flush=True)
             lungs_mask[0, 0, 0] = lungs_mask[-1, -1, -1] = True
             
         box = mask2bounding_box(lungs_mask)

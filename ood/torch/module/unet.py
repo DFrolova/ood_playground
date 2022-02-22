@@ -1,12 +1,16 @@
 import warnings
 from functools import partial
 
+import numpy as np
 import torch
 from torch import nn
 
 from dpipe import layers
 from dpipe.layers.resblock import ResBlock, ResBlock2d, ResBlock3d
 from ood.torch.model import get_resizing_features_modules
+from dpipe.layers import PreActivationND
+from dpipe.im.utils import identity
+from dpipe.im.shape_ops import crop_to_shape
 
 
 class UNet(nn.Module):
@@ -266,6 +270,49 @@ class UNet3DLuna(nn.Module):
     def forward(self, x):
         return self.head(self.forward_features(x))
 
+
+class ResBlockDropout(nn.Module):
+    """
+    Performs a sequence of two convolutions with residual connection (Residual Block) and Dropout.
+    ..
+        in ---> (BN --> activation --> Conv) --> (BN --> activation --> Conv) --> Dropout + --> out
+            |                                                                             ^
+            |                                                                             |
+             -----------------------------------------------------------------------------
+    """
+
+    def __init__(self, in_channels, out_channels, *, kernel_size, stride=1, padding=0, dilation=1, bias=False,
+                 activation_module=nn.ReLU, conv_module, batch_norm_module, dropout_module, p_dropout, **kwargs):
+        super().__init__()
+        # ### Features path ###
+        pre_activation = partial(
+            PreActivationND, kernel_size=kernel_size, padding=padding, dilation=dilation,
+            activation_module=activation_module, conv_module=conv_module, 
+            batch_norm_module=batch_norm_module, **kwargs)
+
+        self.conv_path = nn.Sequential(pre_activation(in_channels, out_channels, stride=stride, bias=False),
+                                       pre_activation(out_channels, out_channels, bias=bias),
+                                       dropout_module(p=p_dropout))
+
+        # ### Shortcut ###
+        spatial_difference = np.floor(
+            np.asarray(dilation) * (np.asarray(kernel_size) - 1) - 2 * np.asarray(padding)
+        ).astype(int)
+        if not (spatial_difference >= 0).all():
+            raise ValueError(f"The output's shape cannot be greater than the input's shape. ({spatial_difference})")
+
+        if in_channels != out_channels or stride != 1:
+            self.adjust_to_stride = conv_module(in_channels, out_channels, kernel_size=1, stride=stride, bias=bias)
+        else:
+            self.adjust_to_stride = identity
+
+    def forward(self, x):
+        x_conv = self.conv_path(x)
+        shape = x_conv.shape[2:]
+        axes = range(-len(shape), 0)
+        x_skip = crop_to_shape(self.adjust_to_stride(x), shape=shape, axis=axes)
+        return x_conv + x_skip
+        
     
 class UNet3DLunaMCDropout(nn.Module):
     def __init__(self, init_bias: float = None, p_dropout: float = 0.1):
@@ -276,8 +323,10 @@ class UNet3DLunaMCDropout(nn.Module):
         self.unet = nn.Sequential(
             nn.Conv3d(1, 8, kernel_size=3, padding=1),
             layers.FPN(
-                layer=lambda in_, out, *args, **kwargs: nn.Sequential(layers.ResBlock3d(in_, out, *args, **kwargs),
-                                                                      nn.Dropout(p=self.p_dropout)),
+                layer=partial(ResBlockDropout, conv_module=nn.Conv3d, batch_norm_module=nn.BatchNorm3d, 
+                              dropout_module=nn.Dropout, p_dropout=p_dropout),
+#                 layer=lambda in_, out, *args, **kwargs: nn.Sequential(layers.ResBlock3d(in_, out, *args, **kwargs),
+#                                                                       nn.Dropout(p=self.p_dropout)),
                 downsample=nn.MaxPool3d(2, ceil_mode=True),
                 upsample=nn.Identity,
                 merge=lambda left, down: torch.add(
