@@ -212,12 +212,14 @@ def evaluate_individual_metrics_probably_with_ids_no_pred_mc_dropout(load_y, loa
 
     results = defaultdict(dict)
     for _id in tqdm(test_ids):
-        target = load_y(_id)
         input_img = load_x(_id)
         deterministic_prediction = predict(input_img)
         ensemble_preds = predict_with_dropout(input_img)
         results[_id] = agg_function(ensemble_preds)
         
+        if len(segm_functions) > 0:
+            target = load_y(_id)
+            
         for agg_func_name, agg_func in segm_functions.items():
             if agg_func_name == 'froc_records':
                 deterministic_logit = predict_logit(load_x(_id))
