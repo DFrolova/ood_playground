@@ -39,11 +39,16 @@ HARP_DATA_PATH = choose_root(
 )
 
 ENSEMBLE_MODELS_PATH_CC359 = choose_root(
-    '/shared/experiments/ood_playground/cc359/hippo_segm/ensemble/',
+    '/shared/experiments/ood_playground/cc359/brain_segm/ensemble/',
     '/',  # TODO: avoiding `FileNotFoundError`
 )
 
 ENSEMBLE_MODELS_PATH_LIDC = choose_root(
     '/shared/experiments/ood_playground/luna/luna/',
+    '/',  # TODO: avoiding `FileNotFoundError`
+)
+
+ENSEMBLE_MODELS_PATH_MIDRC = choose_root(
+    '/shared/experiments/ood_playground/midrc/midrc/',
     '/',  # TODO: avoiding `FileNotFoundError`
 )
