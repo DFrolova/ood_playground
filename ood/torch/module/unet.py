@@ -362,7 +362,6 @@ class UNet3DLunaMCDropout(nn.Module):
 class FPN_WithFeatures(layers.FPN):
     
     def forward(self, x):
-        print(x.shape, flush=True)
         levels, results = [], []
         for i, (layer, down, middle) in enumerate(zip_equal(self.down_path, self.downsample, self.middle_path)):
             x1 = layer(x)
@@ -371,7 +370,6 @@ class FPN_WithFeatures(layers.FPN):
             if i == 1:
                 break
 
-        print(x1.shape, flush=True)
         return x1
     
     
@@ -407,9 +405,11 @@ class UNet3DLunaWithFeatures(nn.Module):
         self.head = layers.PreActivation3d(8, 1, kernel_size=1)
         if init_bias is not None:
             self.head.layer.bias = nn.Parameter(torch.tensor([init_bias], dtype=torch.float32))
+            
+        self.upsample = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=True)
 
     def forward_features(self, x):
-        return self.unet(x)
+        return self.upsample(self.unet(x))
 
     def forward(self, x):
         return self.head(self.forward_features(x))

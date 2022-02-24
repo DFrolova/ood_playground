@@ -87,9 +87,7 @@ def divisible_shape_ood_single_feature(divisor: AxesLike, axis: AxesLike = None,
             shape = np.array(x.shape)[list(local_axis)]
 
             x = pad_to_divisible(x, local_divisor, local_axis, padding_values, local_ratio)
-            print('divis shape:', shape, x.shape)
             result_feat = predict(x, *args, **kwargs)
-            print(result_feat.shape)
 
             return crop_to_shape(result_feat, shape, local_axis, local_ratio)
 
@@ -116,10 +114,6 @@ def patches_grid_ood_single_feature(patch_size: AxesLike, stride: AxesLike, axis
                 x = pad_to_shape(x, new_shape, input_axis, padding_values, ratio)
 
             patches = pmap(predict, divide(x, local_size, local_stride, input_axis), *args, **kwargs)
-
-#             patches_segm, patches_feat = [], []
-#             for p in patches:
-#                 patches_feat.append(p[1])
 
             pred_feat = combine(patches, extract(x.shape, input_axis), local_stride, axis, combiner=combiner)
 
