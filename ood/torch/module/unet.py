@@ -11,6 +11,7 @@ from ood.torch.model import get_resizing_features_modules
 from dpipe.layers import PreActivationND
 from dpipe.im.utils import identity
 from dpipe.im.shape_ops import crop_to_shape
+from dpipe.itertools import zip_equal
 
 
 class UNet(nn.Module):
@@ -327,6 +328,62 @@ class UNet3DLunaMCDropout(nn.Module):
                               dropout_module=nn.Dropout, p_dropout=p_dropout),
 #                 layer=lambda in_, out, *args, **kwargs: nn.Sequential(layers.ResBlock3d(in_, out, *args, **kwargs),
 #                                                                       nn.Dropout(p=self.p_dropout)),
+                downsample=nn.MaxPool3d(2, ceil_mode=True),
+                upsample=nn.Identity,
+                merge=lambda left, down: torch.add(
+                    *layers.interpolate_to_left(left, down, 'trilinear')),
+                structure=[
+                    [[8, 8, 8], [8, 8, 8]],
+                    [[8, 16, 16], [16, 16, 8]],
+                    [[16, 32, 32], [32, 32, 16]],
+                    [[32, 64, 64], [64, 64, 32]],
+                    [[64, 128, 128], [128, 128, 64]],
+                    [[128, 256, 256], [256, 256, 128]],
+                    [[256, 512, 512], [512, 512, 256]],
+                    [[512, 1024, 1024], [1024, 1024, 512]],
+                    [1024, 1024]
+                ],
+                kernel_size=3,
+                padding=1
+            ),
+        )
+
+        self.head = layers.PreActivation3d(8, 1, kernel_size=1)
+        if init_bias is not None:
+            self.head.layer.bias = nn.Parameter(torch.tensor([init_bias], dtype=torch.float32))
+
+    def forward_features(self, x):
+        return self.unet(x)
+
+    def forward(self, x):
+        return self.head(self.forward_features(x))
+    
+    
+class FPN_WithFeatures(layers.FPN):
+    
+    def forward(self, x):
+        print(x.shape, flush=True)
+        levels, results = [], []
+        for i, (layer, down, middle) in enumerate(zip_equal(self.down_path, self.downsample, self.middle_path)):
+            x1 = layer(x)
+            levels.append(middle(x1))
+            x = down(x)
+            if i == 1:
+                break
+
+        print(x1.shape, flush=True)
+        return x1
+    
+    
+class UNet3DLunaWithFeatures(nn.Module):
+    def __init__(self, init_bias: float = None):
+        super().__init__()
+        self.init_bias = init_bias
+
+        self.unet = nn.Sequential(
+            nn.Conv3d(1, 8, kernel_size=3, padding=1),
+            FPN_WithFeatures(
+                layer=layers.ResBlock3d,
                 downsample=nn.MaxPool3d(2, ceil_mode=True),
                 upsample=nn.Identity,
                 merge=lambda left, down: torch.add(

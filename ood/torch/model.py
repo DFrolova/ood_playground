@@ -18,6 +18,15 @@ def inference_step_ood(*inputs: np.ndarray, architecture: Module, activation: Ca
             return to_np(activation(pred_segm)), to_np(pred_feat)
         
         
+def inference_step_ood_lidc_last(*inputs: np.ndarray, architecture: Module, activation: Callable = identity,
+                                 amp: bool = False) -> (np.ndarray):
+    architecture.eval()
+    with torch.no_grad():
+        with torch.cuda.amp.autocast(amp or torch.is_autocast_enabled()):
+            pred_feat = architecture.forward_features(*sequence_to_var(*inputs, device=architecture))
+            return to_np(pred_feat)
+        
+        
 def get_resizing_features_modules(ndim: int, resize_features_to: str):
     if ndim not in (2, 3, ):
         raise ValueError(f'`ndim` should be in (2, 3). However, {ndim} is given.')
