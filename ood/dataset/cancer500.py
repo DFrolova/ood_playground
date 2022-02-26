@@ -5,11 +5,16 @@ import numpy as np
 from dpipe.dataset.wrappers import Proxy
 from dpipe.io import load
 from neurodata.cancer_500 import Cancer500 as Cancer_neurodata
+from ood.utils import get_lib_root_path
 
 
 class Cancer500(Proxy):
-    def __init__(self):
+    def __init__(self, cancer500_ids_path='ood/dataset/cancer500_ids.json'):
         super().__init__(Cancer_neurodata())
+        
+        lib_root_path = get_lib_root_path()
+        self._cancer500_ids = load(lib_root_path / cancer500_ids_path)
+        self.ids = tuple(sorted(self._cancer500_ids))
 
     def load_image(self, i):
         return np.float32(self.image(i))
