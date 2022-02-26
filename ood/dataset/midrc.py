@@ -5,19 +5,15 @@ import numpy as np
 from dpipe.dataset.wrappers import Proxy
 from dpipe.io import load
 from neurodata.midrc_ricord import MIDRCRICORD1a
+from ood.utils import get_lib_root_path
 
 
 class MIDRC(Proxy):
-    def __init__(self, covid_degrees_path='/homes/dfrolova/ood-playground/ood/dataset/midrc_covid_degree.json'):
+    def __init__(self, covid_degrees_path='ood/dataset/midrc_covid_degree.json'):
         super().__init__(MIDRCRICORD1a())
-#         # load
-#         cur_path = str(os.path.abspath('.'))
-#         folders = cur_path.split('/')
-#         i = len(folders) - 1
-#         while folders[i] != 'ood-playground':
-#             i -= 1
-#         self._covid_degrees = load(os.path.join('/'.join(folders[:i+1]), covid_degrees_path))
-        self._covid_degrees = load(covid_degrees_path)
+
+        lib_root_path = get_lib_root_path()
+        self._covid_degrees = load(lib_root_path / covid_degrees_path)
         self.ids = tuple(sorted(self._covid_degrees.keys()))
         
     def get_covid_degree(self, i):
