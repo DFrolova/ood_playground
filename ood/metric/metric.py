@@ -58,13 +58,38 @@ def evaluate_individual_metrics_with_froc(load_y, metrics: dict,
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
         
         
+# def evaluate_individual_metrics_with_froc_no_logits(load_y, load_x, metrics: dict, predict_logit,
+#                                          predictions_path, results_path, exist_ok=False):
+#     assert len(metrics) > 0, 'No metric provided'
+#     os.makedirs(results_path, exist_ok=exist_ok)
+
+#     results = defaultdict(dict)
+#     for identifier, prediction in tqdm(load_from_folder(predictions_path)):
+#         target = load_y(identifier)
+
+#         for metric_name, metric in metrics.items():
+#             if metric_name == 'froc_records':
+#                 logit = predict_logit(load_x(identifier))
+#                 results[metric_name][identifier] = metric(target, prediction, logit)
+#             else:
+#                 try:
+#                     results[metric_name][identifier] = metric(target, prediction, identifier)
+#                 except TypeError:
+#                     results[metric_name][identifier] = metric(target, prediction)
+
+#     for metric_name, result in results.items():
+#         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
+
+
 def evaluate_individual_metrics_with_froc_no_logits(load_y, load_x, metrics: dict, predict_logit,
                                          predictions_path, results_path, exist_ok=False):
     assert len(metrics) > 0, 'No metric provided'
     os.makedirs(results_path, exist_ok=exist_ok)
 
     results = defaultdict(dict)
-    for identifier, prediction in tqdm(load_from_folder(predictions_path)):
+    for uid_num, pred_file in enumerate(tqdm(os.listdir(predictions_path))):
+        identifier = pred_file[:-4]
+        prediction = load(os.path.join(predictions_path, pred_file))
         target = load_y(identifier)
 
         for metric_name, metric in metrics.items():
@@ -76,10 +101,14 @@ def evaluate_individual_metrics_with_froc_no_logits(load_y, load_x, metrics: dic
                     results[metric_name][identifier] = metric(target, prediction, identifier)
                 except TypeError:
                     results[metric_name][identifier] = metric(target, prediction)
-
+         
+        if uid_num % 50 == 0:
+            for metric_name, result in results.items():
+                save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
+                
     for metric_name, result in results.items():
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
-        
+
         
 def evaluate_individual_metrics_with_froc_no_pred(load_y, load_x, predict, predict_logit, metrics: dict, test_ids, 
                                                   results_path, exist_ok=False):
@@ -136,7 +165,10 @@ def evaluate_individual_metrics_with_froc_with_crops(load_x, load_y_full, predic
     spatial_boxes = load(spatial_boxes_path)
 
     results = defaultdict(dict)
-    for identifier, prediction in tqdm(load_from_folder(predictions_path)):
+#     for identifier, prediction in tqdm(load_from_folder(predictions_path)):
+    for uid_num, pred_file in enumerate(tqdm(os.listdir(predictions_path))):
+        identifier = pred_file[:-4]
+        prediction = load(os.path.join(predictions_path, pred_file))
         base_identifier = identifier.split('_')[0]
         target_full = load_y_full(base_identifier)
         spatial_box = spatial_boxes[identifier]
@@ -146,6 +178,7 @@ def evaluate_individual_metrics_with_froc_with_crops(load_x, load_y_full, predic
         for metric_name, metric in metrics.items():
             if metric_name == 'froc_records':
                 logit = predict_logit(load_x(identifier))
+                logit_full = get_padded_prediction(logit, target_full, identifier, spatial_box)
                 results[metric_name][identifier] = metric(target, prediction, logit)
             else:
                 try:
@@ -160,6 +193,9 @@ def evaluate_individual_metrics_with_froc_with_crops(load_x, load_y_full, predic
                     results[f'{metric_name}_padded'][identifier] = metric(target_full, prediction_full, base_identifier)
                 except TypeError:
                     results[f'{metric_name}_padded'][identifier] = metric(target_full, prediction_full)
+            if metric_name == 'froc_records':
+                results[f'{metric_name}_padded'][identifier] = metric(target_full, prediction_full, logit_full)
+                
 
     for metric_name, result in results.items():
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)

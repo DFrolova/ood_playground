@@ -33,6 +33,11 @@ TASK4_HIPPO_PATH = choose_root(
     '/',  # TODO: avoiding `FileNotFoundError`
 )
 
+HEART_DATA_PATH = choose_root(
+    '/shared/data/Task02_Heart/',
+    '/',  # TODO: avoiding `FileNotFoundError`
+)
+
 HARP_DATA_PATH = choose_root(
     '/shared/data/HarP/',
     '/',  # TODO: avoiding `FileNotFoundError`
