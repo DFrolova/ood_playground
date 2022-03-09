@@ -2,11 +2,15 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from scipy.ndimage import grey_opening, label as _label
 
 from dpipe.im.shape_ops import zoom
 from dpipe.io import load
 from dpipe.dataset.wrappers import Proxy
 from ood.batch_iter.pipeline import SPATIAL_DIMS
+from dpipe.im.box import mask2bounding_box
+from dpipe.im import crop_to_box
+from dpipe.im.utils import build_slices
 
 
 class GammaKnife:
@@ -99,3 +103,30 @@ class Rescale3D(Change):
 class RotateImage(Change):
     def _change(self, x, i):
         return np.flip(np.rot90(x, k=3, axes=(-3, -2)), axis=SPATIAL_DIMS[2])
+    
+    
+class CropToScull(Change):
+    def _skull_bbox(self, scan, kernel_size=14, q=70, k=10):
+        scan = scan - scan.min()
+
+        # Opening to get rid of steel
+        scan_opening = grey_opening(scan, size=[kernel_size] * 3)
+        labels = _label(scan_opening > np.percentile(scan_opening, q))[0]
+
+        l, c = np.unique(labels, return_counts=True)
+        mask = labels == l[np.argmax(c[1:]) + 1]
+
+        start, stop = mask2bounding_box(mask)
+
+        shift = np.array([10, 10, 10])
+        start = np.clip(start - shift, 0, mask.shape)
+        stop = np.clip(stop + shift, 0, mask.shape)
+
+        mask = np.zeros_like(scan, dtype=bool)
+        mask[build_slices(start, stop)] = True
+        bbox = mask2bounding_box(mask & (scan > scan.max() / k))
+
+        return bbox
+    
+    def _change(self, x, i):
+        return crop_to_box(x, self._skull_bbox(self._shadowed.load_image(i)))
