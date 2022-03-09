@@ -36,7 +36,7 @@ class Cancer500(Proxy):
     
     def load_segm(self, i):
         nodules = self.nodules(i)
-        image_shape = self.load_image(i).shape
+        image_shape = self.image(i).shape
         image_spacing = self.load_spacing(i)
         
         mask = np.zeros(image_shape, dtype=bool)
