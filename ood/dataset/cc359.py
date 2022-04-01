@@ -4,7 +4,7 @@ from dpipe.dataset.segmentation import MultichannelSegmentationFromCSV
 
 
 class CC359(MultichannelSegmentationFromCSV):
-    def __init__(self, data_path, modalities=('MRI', ), target='brain_mask', metadata_rpath='meta.csv', index_col='id'):
+    def __init__(self, data_path, modalities=('MRI', ), target='brain_mask', metadata_rpath='meta_brain.csv', index_col='id'):
         super().__init__(data_path=data_path,
                          modalities=modalities,
                          targets=(target, ),

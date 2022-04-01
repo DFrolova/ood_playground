@@ -36,7 +36,7 @@ def compute_metrics_probably_with_ids(predict: Callable, load_x: Callable, load_
 
 
 def evaluate_individual_metrics_with_froc(load_y, metrics: dict,
-                                         predictions_path, logits_path, results_path, exist_ok=False):
+                                          predictions_path, logits_path, results_path, exist_ok=False):
     assert len(metrics) > 0, 'No metric provided'
     os.makedirs(results_path, exist_ok=exist_ok)
 
