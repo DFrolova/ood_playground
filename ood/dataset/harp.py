@@ -6,7 +6,7 @@ from dpipe.dataset.segmentation import MultichannelSegmentationFromCSV
 
 class HarP(MultichannelSegmentationFromCSV):
     def __init__(self, data_path, modalities=('MRI', ), targets=('hippo_mask_L', 'hippo_mask_R'), 
-                 metadata_rpath='meta.csv', index_col='id'):
+                 metadata_rpath='meta_harp.csv', index_col='id'):
         super().__init__(data_path=data_path,
                          modalities=modalities,
                          targets=targets,
@@ -14,7 +14,7 @@ class HarP(MultichannelSegmentationFromCSV):
                          index_col=index_col)
 
     def load_image(self, i):
-        image = nib.load(self.df['MRI'].loc[i]).get_fdata()
+        image = nib.load(data_path / self.df['MRI'].loc[i]).get_fdata()
         image = np.swapaxes(image, 0, 2) # reshape image
         return np.float32(image)
 

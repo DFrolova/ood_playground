@@ -5,7 +5,7 @@ import numpy as np
 from tqdm import tqdm
 from sklearn.metrics import roc_auc_score
 
-from dpipe.io import save_json
+from dpipe.io import save_json, save
 from dpipe.im.metrics import iou, dice_score
 
 
@@ -25,6 +25,10 @@ def tnr_at_95_tpr(y_true, y_pred):
 
 
 def calc_ood_scores(labels, is_ood_true, print_results=True):
+    # scale to [0; 1] range
+    if labels.max() - labels.min() > 0:
+        labels = (labels - labels.min()) / (labels.max() - labels.min())
+        
     det_acc = detection_accuracy(is_ood_true, labels)
     roc_auc = roc_auc_score(is_ood_true, labels)
     tnr = tnr_at_95_tpr(is_ood_true, labels)
@@ -64,6 +68,7 @@ def get_inconsistency_metrics(ensemble_preds, top_n_voxels=500000, entr_eps=1e-9
     
     mean_preds = ensemble_preds.mean(axis=0)
     std_preds = ensemble_preds.std(axis=0).flatten()
+    
     # take top uncertain pixels
     sorted_ids = np.argsort(mean_preds.flatten())
     std_preds_top = std_preds[sorted_ids][- 4 * top_n_voxels:]
