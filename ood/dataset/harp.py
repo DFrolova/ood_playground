@@ -14,7 +14,7 @@ class HarP(MultichannelSegmentationFromCSV):
                          index_col=index_col)
 
     def load_image(self, i):
-        image = nib.load(data_path / self.df['MRI'].loc[i]).get_fdata()
+        image = nib.load(self.path / self.df['MRI'].loc[i]).get_fdata()
         image = np.swapaxes(image, 0, 2) # reshape image
         return np.float32(image)
 

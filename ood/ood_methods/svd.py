@@ -13,6 +13,22 @@ def get_spectrum(feature_map):
     normalized_S /= np.linalg.norm(normalized_S)
     return normalized_S
 
+# from dpipe.im.shape_ops import zoom
+
+
+# def get_spectrum(feature_map):
+    
+#     scale_factor = 50 / feature_map.shape[1]
+#     feature_map = zoom(feature_map, [scale_factor, scale_factor, scale_factor, scale_factor], order=3)
+    
+#     feature_map = np.swapaxes(feature_map, 0, 1)
+#     feature_map = feature_map.reshape(feature_map.shape[0], -1).astype(np.float32)
+    
+#     S = np.linalg.svd(feature_map, full_matrices=False, compute_uv=False)
+#     normalized_S = np.log(S + 1e-9)
+#     normalized_S /= np.linalg.norm(normalized_S)
+#     return normalized_S
+
 
 def get_ood_scores_from_spectrum(test_ids, train_predictions_path, spectrum_folder, results_path, exist_ok=False):
     results = defaultdict(dict)

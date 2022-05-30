@@ -1,4 +1,6 @@
 import torch
+import numpy as np
+from tqdm import tqdm
 
 import gpytorch
 from gpytorch.distributions import MultivariateNormal
@@ -16,7 +18,8 @@ from sklearn import cluster
 
 
 def initial_values(batch_iter, feature_extractor, device, n_inducing_points):
-    num_patches = 10
+        
+    num_patches = 2 # todo increase to 10
     # idx = torch.randperm(len(train_dataset))[:1000].chunk(steps)
     f_X_samples = []
     
@@ -24,19 +27,25 @@ def initial_values(batch_iter, feature_extractor, device, n_inducing_points):
 
     with torch.no_grad():
         
-        for i in range(num_patches):
-            X_sample, _ = batch_iter.next()
+        for X_sample, _ in batch_iter():
+            
             # X_sample = torch.stack([train_dataset[j][0] for j in idx[i]])
 
-            X_sample = X_sample.to(device)
+            X_sample = torch.Tensor(X_sample).to(device)
             
             f_X_s = feature_extractor(X_sample).cpu()
-            print(f_X_s.shape)
+            f_X_s = torch.swapaxes(f_X_s, 0, 1)
+            f_X_samples.append(f_X_s.reshape((f_X_s.shape[0], -1)).T)
+                        
+            if len(f_X_samples) == num_patches:
+                break
             
-            f_X_samples.append(f_X_s)
-            
-
     f_X_samples = torch.cat(f_X_samples)
+    print(f_X_samples.shape)
+    
+    # get random sample
+    ids = np.random.choice(range(len(f_X_samples)), 2000, replace=False)
+    f_X_samples = f_X_samples[ids]
 
     initial_inducing_points = _get_initial_inducing_points(
         f_X_samples.numpy(), n_inducing_points
@@ -50,6 +59,7 @@ def _get_initial_inducing_points(f_X_sample, n_inducing_points):
     kmeans = cluster.MiniBatchKMeans(
         n_clusters=n_inducing_points, batch_size=n_inducing_points * 10
     )
+    
     kmeans.fit(f_X_sample)
     initial_inducing_points = torch.from_numpy(kmeans.cluster_centers_)
 
@@ -143,5 +153,19 @@ class DKL(gpytorch.Module):
 
     def forward(self, x):
         features = self.feature_extractor(x)
-        # TODO reshape
-        return self.gp(features)
+        features = torch.swapaxes(features, 0, 1)
+        features = features.reshape((features.shape[0], -1)).T
+        
+        print(features.shape)
+        
+        result = []
+        batch_size = 10000
+        n_batches = int(np.ceil(features.shape[0] / batch_size))
+        
+        for i in tqdm(range(n_batches)):
+            feature_batch = features[i * batch_size : (i + 1) * batch_size]
+            result.append(self.gp(feature_batch))
+            print(type(result))
+            # print(result[-1].shape)
+        
+        return torch.cat(result)

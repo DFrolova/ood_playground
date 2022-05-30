@@ -2,8 +2,8 @@ import numpy as np
 
 
 
-def train_step(*inputs: np.ndarray, architecture: Module, criterion: Callable, optimizer: Optimizer,
-               n_targets: int = 1, loss_key: str = None, **optimizer_params) -> np.ndarray:
+def train_step(*inputs: np.ndarray, architecture: Module, criterion: Callable, optimizer: Optimizer, n_targets: int = 1,
+               loss_key: str = None, scaler: torch.cuda.amp.GradScaler = None, clip_grad: float = None, **optimizer_params) -> np.ndarray:
     """
     Performs a forward-backward pass, and make a gradient step, according to the given ``inputs``.
     Parameters
@@ -24,6 +24,10 @@ def train_step(*inputs: np.ndarray, architecture: Module, criterion: Callable, o
         indicates which key should be used for gradient computation.
     optimizer_params
         additional parameters that will override the optimizer's current parameters (e.g. lr).
+    scaler
+        a gradient scaler used to operate in automatic mixed precision mode.
+    clip_grad
+        maximum l2 norm of the gradient to clip it by
     Notes
     -----
     Note that both input and output are **not** of type ``torch.Tensor`` - the conversion
@@ -42,11 +46,12 @@ def train_step(*inputs: np.ndarray, architecture: Module, criterion: Callable, o
     inputs = sequence_to_var(*inputs, device=architecture)
     inputs, targets = inputs[:n_inputs], inputs[n_inputs:]
 
-    loss = criterion(architecture(*inputs), *targets)
+    with torch.cuda.amp.autocast(scaler is not None or torch.is_autocast_enabled()):
+        loss = criterion(architecture(*inputs), *targets)
 
-    if loss_key is not None:
-        optimizer_step(optimizer, loss[loss_key], **optimizer_params)
-        return dmap(to_np, loss)
+    # if loss_key is not None:
+    #     optimizer_step(optimizer, loss[loss_key], scaler=scaler, clip_grad=clip_grad, **optimizer_params)
+    #     return dmap(to_np, loss)
 
-    optimizer_step(optimizer, loss, **optimizer_params)
+    optimizer_step(optimizer, loss, scaler=scaler, clip_grad=clip_grad, **optimizer_params)
     return to_np(loss)

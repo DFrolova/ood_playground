@@ -273,4 +273,4 @@ class UNetSpectralNorm(nn.Module):
 class UNetSpectralNormFeatureExtractor(UNetSpectralNorm):
     
     def forward(self, x: torch.Tensor):
-        return super.forward(x, return_features=True)[1]
+        return super().forward(x, return_features=True)[1]
