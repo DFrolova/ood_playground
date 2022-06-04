@@ -6,7 +6,7 @@ from torch import nn
 from torch.nn import Module
 
 from dpipe.im.utils import identity
-from dpipe.torch import sequence_to_var, to_np
+from dpipe.torch import sequence_to_var, to_np, get_device
 
 
 def inference_step_ood(*inputs: np.ndarray, architecture: Module, activation: Callable = identity,
@@ -25,6 +25,30 @@ def inference_step_ood_lidc_last(*inputs: np.ndarray, architecture: Module, acti
         with torch.cuda.amp.autocast(amp or torch.is_autocast_enabled()):
             pred_feat = architecture.forward_features(*sequence_to_var(*inputs, device=architecture))
             return to_np(pred_feat)
+        
+        
+def inference_step_godin(*inputs: np.ndarray, architecture: Module, activation: Callable = identity,
+                         amp: bool = False, noise_magnitude: float = 0.02) -> (np.ndarray, np.ndarray):
+    
+    device = get_device(architecture)
+    architecture.eval()
+
+    with torch.cuda.amp.autocast(amp or torch.is_autocast_enabled()):
+        input_image = torch.tensor(inputs[0], requires_grad=True, device=device)
+        logit, h, _ = architecture(input_image, return_num_and_denom=True)
+        scores = h
+        max_scores, _ = torch.max(scores, dim = 1)
+        max_scores = max_scores.sum()
+        max_scores.backward()
+                
+        if input_image.grad is not None:
+            gradient = torch.sign(-input_image.grad.data)
+            tempInputs = torch.add(input_image, -gradient, alpha=noise_magnitude)
+            tempInputs = torch.clip(tempInputs, min=0., max=1.)
+        
+            _, h, _ = architecture(tempInputs, return_num_and_denom=True)
+        
+        return to_np(activation(logit)), to_np(h)
         
         
 def get_resizing_features_modules(ndim: int, resize_features_to: str):
