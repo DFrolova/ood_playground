@@ -69,7 +69,7 @@ class UNet3DLuna_GODIN(UNet3DLuna):
     def forward(self, x: torch.Tensor, return_num_and_denom: bool = False):
         features = self.forward_features(x)
         h = self.head(features)
-        g = self.head_g(features)
+        g = torch.sigmoid(self.head_g(features))
         
         if return_num_and_denom:
                 return h / g, h, g
