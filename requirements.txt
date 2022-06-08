@@ -8,3 +8,4 @@ lazycon
 scikit-image
 pylidc
 dicom-csv
+mdai
