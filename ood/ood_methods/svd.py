@@ -6,12 +6,17 @@ import numpy as np
 from dpipe.io import load, save_json
 
 
+# def get_spectrum(feature_map):
+#     feature_map = feature_map.reshape(feature_map.shape[0], -1).astype(np.float32)
+#     S = np.linalg.svd(feature_map, full_matrices=False, compute_uv=False)
+#     normalized_S = np.log(S)
+#     normalized_S /= np.linalg.norm(normalized_S)
+#     return normalized_S
+
 def get_spectrum(feature_map):
     feature_map = feature_map.reshape(feature_map.shape[0], -1).astype(np.float32)
-    S = np.linalg.svd(feature_map, full_matrices=False, compute_uv=False)
-    normalized_S = np.log(S)
-    normalized_S /= np.linalg.norm(normalized_S)
-    return normalized_S
+    u, S, v = np.linalg.svd(feature_map, full_matrices=False, compute_uv=True)
+    return u[:5]
 
 # from dpipe.im.shape_ops import zoom
 

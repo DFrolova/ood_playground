@@ -10,16 +10,22 @@ from ood.batch_iter.pipeline import SPATIAL_DIMS
 
 
 def evaluate_individual_metrics_godin(load_y, load_x, predict, metrics: dict, test_ids,
-                                      results_path, predict_logit=None, exist_ok=False):
+                                      results_path, predict_logit=None, exist_ok=False, has_targets=True):
     assert len(metrics) > 0, 'No metric provided'
     os.makedirs(results_path, exist_ok=exist_ok)
 
     results = defaultdict(dict)
     for _id in tqdm(test_ids):
-        target = load_y(_id)
-        image = load_x(_id)
-        prediction, scores = predict(image)
         
+        image = load_x(_id)
+        
+        if has_targets:
+            target = load_y(_id)
+        else:
+            target = np.zeros_like(image)
+        
+        prediction, scores = predict(image)
+                
         results['godin'][_id] = scores.mean()
 
         for metric_name, metric in metrics.items():
