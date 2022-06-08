@@ -1,11 +1,7 @@
-import os
-
 import numpy as np
 
 from dpipe.dataset.wrappers import Proxy
-from dpipe.io import load
-from neurodata.lidc import LIDC, LUNA16 as LUNA16Neurodata
-# from ood.paths import LIDC_SUPPLEMENTARY_PATH
+from neurodata.lidc import LIDC
 
 
 class LUNA16(Proxy):
@@ -31,7 +27,4 @@ class LUNA16(Proxy):
     
     
 def get_n_tumors(dataset, ids):
-    n_tumors = []
-    for uid in ids:
-        n_tumors.append(dataset.n_tumors(uid))
-    return n_tumors
+    return [dataset.n_tumors(i) for i in ids]

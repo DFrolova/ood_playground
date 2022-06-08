@@ -5,8 +5,6 @@ statsmodels
 nibabel
 pandas
 lazycon
-albumentations
 scikit-image
 pylidc
 dicom-csv
-mdai
