@@ -36,17 +36,19 @@ def inference_step_godin(*inputs: np.ndarray, architecture: Module, activation: 
     with torch.cuda.amp.autocast(amp or torch.is_autocast_enabled()):
         input_image = torch.tensor(inputs[0], requires_grad=True, device=device)
         logit, h, _ = architecture(input_image, return_num_and_denom=True)
-        scores = h
-        max_scores, _ = torch.max(scores, dim = 1)
-        max_scores = max_scores.sum()
-        max_scores.backward()
-                
-        if input_image.grad is not None:
-            gradient = torch.sign(-input_image.grad.data)
-            tempInputs = torch.add(input_image, -gradient, alpha=noise_magnitude)
-            tempInputs = torch.clip(tempInputs, min=0., max=1.)
         
-            _, h, _ = architecture(tempInputs, return_num_and_denom=True)
+        if noise_magnitude != 0.:
+            scores = h
+            max_scores, _ = torch.max(scores, dim = 1)
+            max_scores = max_scores.sum()
+            max_scores.backward()
+
+            if input_image.grad is not None:
+                gradient = torch.sign(-input_image.grad.data)
+                tempInputs = torch.add(input_image, -gradient, alpha=noise_magnitude)
+                tempInputs = torch.clip(tempInputs, min=0., max=1.)
+
+                _, h, _ = architecture(tempInputs, return_num_and_denom=True)
         
         return to_np(activation(logit)), to_np(h)
         
