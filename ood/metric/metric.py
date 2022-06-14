@@ -16,6 +16,7 @@ from dpipe.itertools import zip_equal
 from ood.utils import volume2diameter, get_pred
 from ood.batch_iter.pipeline import SPATIAL_DIMS, sample_center_uniformly
 from ood.batch_iter.crop_utils import get_padded_prediction
+from ood.batch_iter.augmentations import flips
 
 
 def aggregate_metric_probably_with_ids(xs, ys, ids, metric, aggregate_fn=np.mean):
@@ -123,6 +124,33 @@ def evaluate_individual_metrics_with_froc_no_pred(load_y, load_x, predict, predi
         for metric_name, metric in metrics.items():
             if metric_name == 'froc_records':
                 logit = predict_logit(load_x(identifier))
+                results[metric_name][identifier] = metric(target, prediction, logit)
+            else:
+                try:
+                    results[metric_name][identifier] = metric(target, prediction, identifier)
+                except TypeError:
+                    results[metric_name][identifier] = metric(target, prediction)
+
+    for metric_name, result in results.items():
+        save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
+        
+        
+def evaluate_individual_metrics_with_froc_no_pred_with_augm(load_y, load_x, predict, predict_logit, 
+                                                            metrics: dict, test_ids, 
+                                                            results_path, exist_ok=False):
+    assert len(metrics) > 0, 'No metric provided'
+    os.makedirs(results_path, exist_ok=exist_ok)
+
+    results = defaultdict(dict)
+    for identifier in tqdm(test_ids):
+        x = load_x(identifier)
+        target = load_y(identifier)
+        x, target = flips((x, target), p=1.)
+        prediction = predict(x)
+
+        for metric_name, metric in metrics.items():
+            if metric_name == 'froc_records':
+                logit = predict_logit(x)
                 results[metric_name][identifier] = metric(target, prediction, logit)
             else:
                 try:

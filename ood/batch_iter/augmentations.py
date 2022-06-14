@@ -70,3 +70,13 @@ def rotate_3d(inputs, limit, random_state):
         output = rotate(output, angle, mode='nearest', axes=SPATIAL_DIMS[:2], reshape=False)
         outputs.append(output)
     return tuple(outputs)
+
+
+def flips(inputs, p=7/8, dims=None):
+    if dims is None:
+        dims = SPATIAL_DIMS
+    outputs = inputs
+    dim = np.random.choice(dims)
+    if np.random.rand() < p:
+        outputs = [np.flip(x, axis=dim) for x in outputs]
+    return outputs
