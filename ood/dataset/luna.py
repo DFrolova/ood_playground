@@ -21,10 +21,7 @@ class LUNA16(Proxy):
     
     def n_tumors(self, i):
         return len(self.nodules(i))
-        
-#     def load_lungs(self, i):
-#         return load(os.path.join(LIDC_SUPPLEMENTARY_PATH, str(i)))
-    
+
     
 def get_n_tumors(dataset, ids):
     return [dataset.n_tumors(i) for i in ids]

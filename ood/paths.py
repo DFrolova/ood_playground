@@ -43,6 +43,11 @@ HARP_DATA_PATH = choose_root(
     '/',  # TODO: avoiding `FileNotFoundError`
 )
 
+LUNGS_BBOXES_PATH = choose_root(
+    '/shared/experiments/ood_playground/bounding_boxes/',
+    '/',  # TODO: avoiding `FileNotFoundError`
+)
+
 ENSEMBLE_MODELS_PATH_CC359 = choose_root(
     '/shared/experiments/ood_playground/cc359/brain_segm/cc359/',
     '/',  # TODO: avoiding `FileNotFoundError`

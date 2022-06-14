@@ -1,10 +1,13 @@
+import os
+
 import numpy as np
 from skimage import measure
-from skimage.segmentation import flood
+# from skimage.segmentation import flood
 
 from dpipe.dataset.wrappers import Proxy
 from dpipe.im.shape_ops import zoom, crop_to_box, pad
-from dpipe.im.box import mask2bounding_box
+from dpipe.io import load
+from ood.paths import LUNGS_BBOXES_PATH
 
 
 class Change(Proxy):
@@ -53,32 +56,44 @@ class Rescale3D(Change):
     
     
 class CropToLungs(Change):
-    def __init__(self, shadowed, lungs_threshold=-600, lungs_fraction_threshold=0.005):
+    def __init__(self, shadowed, dataset_name, bboxes_path=LUNGS_BBOXES_PATH):
         super().__init__(shadowed)
-        self.lungs_threshold = lungs_threshold
-        self.lungs_fraction_threshold = lungs_fraction_threshold
-        
-    def _bbox(self, i):
-        x = self._shadowed.load_image(i)
-        # find lungs
-        lungs_mask = x < self.lungs_threshold
-        # find air
-        air_mask = flood(pad(lungs_mask, padding=1, axis=(0, 1), padding_values=True),
-                         seed_point=(0, 0, 0))[1:-1, 1:-1]
-        lungs_mask = lungs_mask & ~air_mask
-
-        if not lungs_mask.any():
-#             print(f'Warning: no lungs were found! Case: {i}', flush=True)
-            lungs_mask[0, 0, 0] = lungs_mask[-1, -1, -1] = True
-            
-        box = mask2bounding_box(lungs_mask)
-        return box
+        self.lungs_bboxes = load(os.path.join(LUNGS_BBOXES_PATH, f'{dataset_name}.json'))
 
     def _change(self, x, i):
-        return crop_to_box(x, self._bbox(i))
+        return crop_to_box(x, self.lungs_bboxes[i])
 
     def load_orig_image(self, i):
         return self._shadowed.load_image(i)
+    
+    
+# class CropToLungs(Change):
+#     def __init__(self, shadowed, lungs_threshold=-600, lungs_fraction_threshold=0.005):
+#         super().__init__(shadowed)
+#         self.lungs_threshold = lungs_threshold
+#         self.lungs_fraction_threshold = lungs_fraction_threshold
+        
+#     def _bbox(self, i):
+#         x = self._shadowed.load_image(i)
+#         # find lungs
+#         lungs_mask = x < self.lungs_threshold
+#         # find air
+#         air_mask = flood(pad(lungs_mask, padding=1, axis=(0, 1), padding_values=True),
+#                          seed_point=(0, 0, 0))[1:-1, 1:-1]
+#         lungs_mask = lungs_mask & ~air_mask
+
+#         if not lungs_mask.any():
+# #             print(f'Warning: no lungs were found! Case: {i}', flush=True)
+#             lungs_mask[0, 0, 0] = lungs_mask[-1, -1, -1] = True
+            
+#         box = mask2bounding_box(lungs_mask)
+#         return box
+
+#     def _change(self, x, i):
+#         return crop_to_box(x, self._bbox(i))
+
+#     def load_orig_image(self, i):
+#         return self._shadowed.load_image(i)
     
 
 def scale_mri(image: np.ndarray, q_min: int = 1, q_max: int = 99) -> np.ndarray:
