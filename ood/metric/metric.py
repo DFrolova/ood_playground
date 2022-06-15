@@ -57,8 +57,8 @@ def evaluate_individual_metrics_with_froc(load_y, metrics: dict,
 
     for metric_name, result in results.items():
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
-        
-        
+
+
 # def evaluate_individual_metrics_with_froc_no_logits(load_y, load_x, metrics: dict, predict_logit,
 #                                          predictions_path, results_path, exist_ok=False):
 #     assert len(metrics) > 0, 'No metric provided'
@@ -83,7 +83,7 @@ def evaluate_individual_metrics_with_froc(load_y, metrics: dict,
 
 
 def evaluate_individual_metrics_with_froc_no_logits(load_y, load_x, metrics: dict, predict_logit,
-                                         predictions_path, results_path, exist_ok=False):
+                                                    predictions_path, results_path, exist_ok=False):
     assert len(metrics) > 0, 'No metric provided'
     os.makedirs(results_path, exist_ok=exist_ok)
 
@@ -102,16 +102,16 @@ def evaluate_individual_metrics_with_froc_no_logits(load_y, load_x, metrics: dic
                     results[metric_name][identifier] = metric(target, prediction, identifier)
                 except TypeError:
                     results[metric_name][identifier] = metric(target, prediction)
-         
+
         if uid_num % 50 == 0:
             for metric_name, result in results.items():
                 save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
-                
+
     for metric_name, result in results.items():
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
 
-        
-def evaluate_individual_metrics_with_froc_no_pred(load_y, load_x, predict, predict_logit, metrics: dict, test_ids, 
+
+def evaluate_individual_metrics_with_froc_no_pred(load_y, load_x, predict, predict_logit, metrics: dict, test_ids,
                                                   results_path, exist_ok=False):
     assert len(metrics) > 0, 'No metric provided'
     os.makedirs(results_path, exist_ok=exist_ok)
@@ -133,10 +133,10 @@ def evaluate_individual_metrics_with_froc_no_pred(load_y, load_x, predict, predi
 
     for metric_name, result in results.items():
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
-        
-        
-def evaluate_individual_metrics_with_froc_no_pred_with_augm(load_y, load_x, predict, predict_logit, 
-                                                            metrics: dict, test_ids, 
+
+
+def evaluate_individual_metrics_with_froc_no_pred_with_augm(load_y, load_x, predict, predict_logit,
+                                                            metrics: dict, test_ids,
                                                             results_path, exist_ok=False):
     assert len(metrics) > 0, 'No metric provided'
     os.makedirs(results_path, exist_ok=exist_ok)
@@ -160,10 +160,10 @@ def evaluate_individual_metrics_with_froc_no_pred_with_augm(load_y, load_x, pred
 
     for metric_name, result in results.items():
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
-        
-        
+
+
 def evaluate_individual_metrics_with_froc_no_logits_no_target(load_x, metrics: dict, predict_logit,
-                                         predictions_path, results_path, exist_ok=False):
+                                                              predictions_path, results_path, exist_ok=False):
     assert len(metrics) > 0, 'No metric provided'
     os.makedirs(results_path, exist_ok=exist_ok)
 
@@ -183,17 +183,17 @@ def evaluate_individual_metrics_with_froc_no_logits_no_target(load_x, metrics: d
 
     for metric_name, result in results.items():
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
-        
 
-def evaluate_individual_metrics_with_froc_with_crops(load_x, load_y_full, predictions_path, predict_logit, 
+
+def evaluate_individual_metrics_with_froc_with_crops(load_x, load_y_full, predictions_path, predict_logit,
                                                      metrics: dict, spatial_boxes_path, results_path, exist_ok=False):
     assert len(metrics) > 0, 'No metric provided'
     os.makedirs(results_path, exist_ok=exist_ok)
-    
+
     spatial_boxes = load(spatial_boxes_path)
 
     results = defaultdict(dict)
-#     for identifier, prediction in tqdm(load_from_folder(predictions_path)):
+    #     for identifier, prediction in tqdm(load_from_folder(predictions_path)):
     for uid_num, pred_file in enumerate(tqdm(os.listdir(predictions_path))):
         identifier = pred_file[:-4]
         prediction = load(os.path.join(predictions_path, pred_file))
@@ -213,7 +213,7 @@ def evaluate_individual_metrics_with_froc_with_crops(load_x, load_y_full, predic
                     results[metric_name][identifier] = metric(target, prediction, base_identifier)
                 except TypeError:
                     results[metric_name][identifier] = metric(target, prediction)
-        
+
         # calculate segmentation metrics for padded images
         for metric_name, metric in metrics.items():
             if metric_name == 'dice_score' or metric_name == 'sdice_score':
@@ -223,7 +223,6 @@ def evaluate_individual_metrics_with_froc_with_crops(load_x, load_y_full, predic
                     results[f'{metric_name}_padded'][identifier] = metric(target_full, prediction_full)
             if metric_name == 'froc_records':
                 results[f'{metric_name}_padded'][identifier] = metric(target_full, prediction_full, logit_full)
-                
 
     for metric_name, result in results.items():
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
@@ -247,7 +246,7 @@ def evaluate_individual_metrics_probably_with_ids(load_y_true, metrics: dict, pr
     for metric_name, result in results.items():
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
 
-        
+
 def evaluate_individual_metrics_probably_with_ids_no_pred(load_y, load_x, predict, metrics: dict, test_ids,
                                                           results_path, exist_ok=False):
     assert len(metrics) > 0, 'No metric provided'
@@ -266,12 +265,12 @@ def evaluate_individual_metrics_probably_with_ids_no_pred(load_y, load_x, predic
 
     for metric_name, result in results.items():
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
-        
-        
-def evaluate_individual_metrics_probably_with_ids_no_pred_mc_dropout(load_y, load_x, predict, predict_logit, 
-                                                                     predict_with_dropout, test_ids, 
-                                                                     results_path, agg_function, 
-                                                                     segm_functions: dict={}, exist_ok=False):
+
+
+def evaluate_individual_metrics_probably_with_ids_no_pred_mc_dropout(load_y, load_x, predict, predict_logit,
+                                                                     predict_with_dropout, test_ids,
+                                                                     results_path, agg_function,
+                                                                     segm_functions: dict = {}, exist_ok=False):
     os.makedirs(results_path, exist_ok=exist_ok)
 
     results = defaultdict(dict)
@@ -280,10 +279,10 @@ def evaluate_individual_metrics_probably_with_ids_no_pred_mc_dropout(load_y, loa
         deterministic_prediction = predict(input_img)
         ensemble_preds = predict_with_dropout(input_img)
         results[_id] = agg_function(ensemble_preds)
-        
+
         if len(segm_functions) > 0:
             target = load_y(_id)
-            
+
         for agg_func_name, agg_func in segm_functions.items():
             if agg_func_name == 'froc_records':
                 deterministic_logit = predict_logit(load_x(_id))
@@ -298,12 +297,13 @@ def evaluate_individual_metrics_probably_with_ids_no_pred_mc_dropout(load_y, loa
         result = {_id: results[_id][agg_func_name] for _id in results.keys()}
         save_json(result, os.path.join(results_path, agg_func_name + '.json'), indent=0)
 
-        
-def evaluate_individual_metrics_probably_with_ids_no_pred_mc_dropout_with_crops(load_y, load_x, predict, predict_logit, 
-                                                                                predict_with_dropout, test_ids, 
-                                                                                spatial_boxes_path, n_repeats, 
-                                                                                results_path, agg_function, 
-                                                                                segm_functions: dict={}, exist_ok=False):
+
+def evaluate_individual_metrics_probably_with_ids_no_pred_mc_dropout_with_crops(load_y, load_x, predict, predict_logit,
+                                                                                predict_with_dropout, test_ids,
+                                                                                spatial_boxes_path, n_repeats,
+                                                                                results_path, agg_function,
+                                                                                segm_functions: dict = {},
+                                                                                exist_ok=False):
     os.makedirs(results_path, exist_ok=exist_ok)
 
     spatial_boxes = load(spatial_boxes_path)
@@ -311,34 +311,34 @@ def evaluate_individual_metrics_probably_with_ids_no_pred_mc_dropout_with_crops(
     for _id in tqdm(test_ids):
         target = load_y(_id)
         image = load_x(_id)
-        
+
         for i in range(n_repeats):
             spatial_box = spatial_boxes[_id + '_' + str(i)]
             image_cropped = crop_to_box(image, box=spatial_box, padding_values=np.min, axis=SPATIAL_DIMS)
-#             deterministic_prediction = predict(image_cropped)
-            
-#             target_cropped = crop_to_box(target, box=spatial_box, padding_values=np.min, axis=SPATIAL_DIMS)
-#             prediction_padded = np.zeros_like(image)
-#             prediction_padded[..., spatial_box[0][-1]:spatial_box[1][-1]] = prediction
-    #         deterministic_prediction = predict(input_img)
+            #             deterministic_prediction = predict(image_cropped)
+
+            #             target_cropped = crop_to_box(target, box=spatial_box, padding_values=np.min, axis=SPATIAL_DIMS)
+            #             prediction_padded = np.zeros_like(image)
+            #             prediction_padded[..., spatial_box[0][-1]:spatial_box[1][-1]] = prediction
+            #         deterministic_prediction = predict(input_img)
             ensemble_preds = predict_with_dropout(image_cropped)
             results[_id + '_' + str(i)] = agg_function(ensemble_preds)
-        
-#         for agg_func_name, agg_func in segm_functions.items():
-#             if agg_func_name == 'froc_records':
-#                 deterministic_logit = predict_logit(load_x(_id))
-#                 results[_id][agg_func_name] = agg_func(target, deterministic_prediction, deterministic_logit)
-#             else:
-#                 try:
-#                     results[_id][agg_func_name] = agg_func(target, deterministic_prediction, _id)
-#                 except TypeError:
-#                     results[_id][agg_func_name] = agg_func(target, deterministic_prediction)
+
+    #         for agg_func_name, agg_func in segm_functions.items():
+    #             if agg_func_name == 'froc_records':
+    #                 deterministic_logit = predict_logit(load_x(_id))
+    #                 results[_id][agg_func_name] = agg_func(target, deterministic_prediction, deterministic_logit)
+    #             else:
+    #                 try:
+    #                     results[_id][agg_func_name] = agg_func(target, deterministic_prediction, _id)
+    #                 except TypeError:
+    #                     results[_id][agg_func_name] = agg_func(target, deterministic_prediction)
 
     for agg_func_name in results[list(results.keys())[0]].keys():
         result = {_id: results[_id][agg_func_name] for _id in results.keys()}
         save_json(result, os.path.join(results_path, agg_func_name + '.json'), indent=0)
 
-        
+
 def get_intersection_stat_dice_id(cc_mask, one_cc, pred=None, logit=None):
     """Returns max local dice and corresponding stat to this hit component.
     If ``pred`` is ``None``, ``cc_mask`` treated as ground truth and stat sets to be 1."""
@@ -368,7 +368,7 @@ def get_intersection_stat_dice_id(cc_mask, one_cc, pred=None, logit=None):
         hit_stats['hit_q95'] = np.array(hit_stats['hit_q95'])[max_idx]
         hit_stats['hit_logit'] = np.array(hit_stats['hit_logit'])[max_idx]
         return hit_stats, np.max(hit_dice), hit_id
-    
+
 
 def froc_records(segm, pred, logit):
     segm_split, segm_n_splits = label(get_pred(segm), return_num=True)

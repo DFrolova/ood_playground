@@ -43,7 +43,7 @@ class Rescale3D(Change):
 
     def load_orig_spacing(self, i):
         return self._shadowed.load_spacing(i)
-    
+
     def load_tumor_centers(self, i):
         segm = self.load_segm(i=i)
         y_bin = segm == 1.
@@ -53,8 +53,8 @@ class Rescale3D(Change):
         probas = np.array([1 / len_cc for len_cc in lengths_cc]) / n_labels
         broadcated_probas = np.repeat(probas, lengths_cc)[:, None]
         return np.hstack((np.vstack(result_centers), broadcated_probas))
-    
-    
+
+
 class CropToLungs(Change):
     def __init__(self, shadowed, dataset_name, bboxes_path=LUNGS_BBOXES_PATH):
         super().__init__(shadowed)
@@ -65,14 +65,14 @@ class CropToLungs(Change):
 
     def load_orig_image(self, i):
         return self._shadowed.load_image(i)
-    
-    
+
+
 # class CropToLungs(Change):
 #     def __init__(self, shadowed, lungs_threshold=-600, lungs_fraction_threshold=0.005):
 #         super().__init__(shadowed)
 #         self.lungs_threshold = lungs_threshold
 #         self.lungs_fraction_threshold = lungs_fraction_threshold
-        
+
 #     def _bbox(self, i):
 #         x = self._shadowed.load_image(i)
 #         # find lungs
@@ -85,7 +85,7 @@ class CropToLungs(Change):
 #         if not lungs_mask.any():
 # #             print(f'Warning: no lungs were found! Case: {i}', flush=True)
 #             lungs_mask[0, 0, 0] = lungs_mask[-1, -1, -1] = True
-            
+
 #         box = mask2bounding_box(lungs_mask)
 #         return box
 
@@ -94,7 +94,7 @@ class CropToLungs(Change):
 
 #     def load_orig_image(self, i):
 #         return self._shadowed.load_image(i)
-    
+
 
 def scale_mri(image: np.ndarray, q_min: int = 1, q_max: int = 99) -> np.ndarray:
     image = np.clip(np.float32(image), *np.percentile(np.float32(image), [q_min, q_max]))

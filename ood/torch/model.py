@@ -16,8 +16,8 @@ def inference_step_ood(*inputs: np.ndarray, architecture: Module, activation: Ca
         with torch.cuda.amp.autocast(amp or torch.is_autocast_enabled()):
             pred_segm, pred_feat = architecture(*sequence_to_var(*inputs, device=architecture), return_features=True)
             return to_np(activation(pred_segm)), to_np(pred_feat)
-        
-        
+
+
 def inference_step_ood_lidc_last(*inputs: np.ndarray, architecture: Module, activation: Callable = identity,
                                  amp: bool = False) -> (np.ndarray):
     architecture.eval()
@@ -25,21 +25,20 @@ def inference_step_ood_lidc_last(*inputs: np.ndarray, architecture: Module, acti
         with torch.cuda.amp.autocast(amp or torch.is_autocast_enabled()):
             pred_feat = architecture.forward_features(*sequence_to_var(*inputs, device=architecture))
             return to_np(pred_feat)
-        
-        
+
+
 def inference_step_godin(*inputs: np.ndarray, architecture: Module, activation: Callable = identity,
                          amp: bool = False, noise_magnitude: float = 0.02) -> (np.ndarray, np.ndarray):
-    
     device = get_device(architecture)
     architecture.eval()
 
     with torch.cuda.amp.autocast(amp or torch.is_autocast_enabled()):
         input_image = torch.tensor(inputs[0], requires_grad=True, device=device)
         logit, h, _ = architecture(input_image, return_num_and_denom=True)
-        
+
         if noise_magnitude != 0.:
             scores = h
-            max_scores, _ = torch.max(scores, dim = 1)
+            max_scores, _ = torch.max(scores, dim=1)
             max_scores = max_scores.sum()
             max_scores.backward()
 
@@ -49,12 +48,12 @@ def inference_step_godin(*inputs: np.ndarray, architecture: Module, activation: 
                 tempInputs = torch.clip(tempInputs, min=0., max=1.)
 
                 _, h, _ = architecture(tempInputs, return_num_and_denom=True)
-        
+
         return to_np(activation(logit)), to_np(h)
-        
-        
+
+
 def get_resizing_features_modules(ndim: int, resize_features_to: str):
-    if ndim not in (2, 3, ):
+    if ndim not in (2, 3,):
         raise ValueError(f'`ndim` should be in (2, 3). However, {ndim} is given.')
 
     ds16 = nn.AvgPool2d(16, 16, ceil_mode=True) if (ndim == 2) else nn.AvgPool3d(16, 16, ceil_mode=True)
@@ -81,16 +80,16 @@ def get_resizing_features_modules(ndim: int, resize_features_to: str):
         resize_features_to__options = ('x1', 'x2', 'x4', 'x8', 'x16')
         raise ValueError(f'`resize_features_to` should be in {resize_features_to__options}. '
                          f'However, {resize_features_to} is given.')
-        
-        
+
+
 def enable_dropout(model: nn.Module):
     """ Function to enable the dropout layers during test-time """
     for m in model.modules():
         if m.__class__.__name__.startswith('Dropout'):
             m.train()
-       
-       
-def inference_step_mc_dropout(*inputs: np.ndarray, architecture: nn.Module, activation: Callable = identity, 
+
+
+def inference_step_mc_dropout(*inputs: np.ndarray, architecture: nn.Module, activation: Callable = identity,
                               amp: bool = False) -> np.ndarray:
     """
     Returns the prediction for the given ``inputs`` with all dropout layers turned to a train mode.

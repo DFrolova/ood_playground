@@ -75,7 +75,7 @@ class SpectralNormConv(SpectralNorm):
 
     def __call__(self, module, inputs):
         assert (
-            inputs[0].shape[1:] == self.input_dim[1:]
+                inputs[0].shape[1:] == self.input_dim[1:]
         ), "Input dims don't match actual input"
         setattr(
             module,
@@ -98,8 +98,8 @@ class SpectralNormConv(SpectralNorm):
         weight = module._parameters[name]
 
         with torch.no_grad():
-            num_input_dim = input_dim[0] * input_dim[1] * input_dim[2] * input_dim[3] * input_dim[4] 
-            #int(torch.prod(torch.Tensor(input_dim)))
+            num_input_dim = input_dim[0] * input_dim[1] * input_dim[2] * input_dim[3] * input_dim[4]
+            # int(torch.prod(torch.Tensor(input_dim)))
             v = normalize(torch.randn(num_input_dim), dim=0, eps=fn.eps)
 
             # get settings from conv-module (for transposed convolution)
@@ -111,13 +111,13 @@ class SpectralNormConv(SpectralNorm):
             )
             fn.output_dim = u.shape
             num_output_dim = (
-                fn.output_dim[0]
-                * fn.output_dim[1]
-                * fn.output_dim[2]
-                * fn.output_dim[3]
-                * fn.output_dim[4]
+                    fn.output_dim[0]
+                    * fn.output_dim[1]
+                    * fn.output_dim[2]
+                    * fn.output_dim[3]
+                    * fn.output_dim[4]
             )
-            #(int(torch.prod(torch.Tensor(fn.output_dim))))
+            # (int(torch.prod(torch.Tensor(fn.output_dim))))
             # overwrite u with random init
             u = normalize(torch.randn(num_output_dim), dim=0, eps=fn.eps)
 
@@ -136,7 +136,7 @@ class SpectralNormConv(SpectralNorm):
 
 
 def spectral_norm_conv(
-    module, coeff, input_dim, n_power_iterations=1, name="weight", eps=1e-12,
+        module, coeff, input_dim, n_power_iterations=1, name="weight", eps=1e-12,
 ):
     """
     Applies spectral normalization to Convolutions with flexible max norm

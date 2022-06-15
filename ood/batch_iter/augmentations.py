@@ -72,7 +72,7 @@ def rotate_3d(inputs, limit, random_state):
     return tuple(outputs)
 
 
-def flips(inputs, p=7/8, dims=None):
+def flips(inputs, p=7 / 8, dims=None):
     if dims is None:
         dims = SPATIAL_DIMS
     outputs = inputs

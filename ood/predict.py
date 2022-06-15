@@ -76,7 +76,7 @@ def patches_grid_ood(patch_size: AxesLike, stride: AxesLike, axis: AxesLike = No
     return decorator
 
 
-def divisible_shape_ood_single_feature(divisor: AxesLike, axis: AxesLike = None, 
+def divisible_shape_ood_single_feature(divisor: AxesLike, axis: AxesLike = None,
                                        padding_values: Union[AxesParams, Callable] = 0,
                                        ratio: AxesParams = 0.5):
     def decorator(predict):

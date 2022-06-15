@@ -1,11 +1,8 @@
-import os
 import warnings
 
 import numpy as np
-from tqdm import tqdm
 from sklearn.metrics import roc_auc_score
 
-from dpipe.io import save_json, save
 from dpipe.im.metrics import iou, dice_score
 
 
@@ -20,7 +17,7 @@ def detection_accuracy(y_true, y_pred):
 
 
 def tnr_at_95_tpr(y_true, y_pred):
-    threshold = np.percentile(y_pred[~y_true], 95) 
+    threshold = np.percentile(y_pred[~y_true], 95)
     return (y_pred[y_true] > threshold).sum() / y_true.sum()
 
 
@@ -28,7 +25,7 @@ def calc_ood_scores(labels, is_ood_true, print_results=True):
     # scale to [0; 1] range
     if labels.max() - labels.min() > 0:
         labels = (labels - labels.min()) / (labels.max() - labels.min())
-        
+
     det_acc = detection_accuracy(is_ood_true, labels)
     roc_auc = roc_auc_score(is_ood_true, labels)
     tnr = tnr_at_95_tpr(is_ood_true, labels)
@@ -45,11 +42,12 @@ def get_maxprob_metric(y_true, prediction):
     return uncertainty_result.mean()
 
 
-def get_entropy_metric(y_true, prediction, eps=1e-9):        
+def get_entropy_metric(y_true, prediction, eps=1e-9):
     # y_true is not used here, added just to have similar interface to other metrics
     return get_entropy(prediction, eps=eps).mean()
 
-def get_entropy(prediction, eps=1e-9):        
+
+def get_entropy(prediction, eps=1e-9):
     # y_true is not used here, added just to have similar interface to other metrics
     warnings.filterwarnings('ignore')
     uncertainty_result = - (prediction * np.log2(prediction + eps) + (1 - prediction) * \
@@ -59,16 +57,18 @@ def get_entropy(prediction, eps=1e-9):
     warnings.filterwarnings('default')
     return uncertainty_result
 
+
 def get_mutual_info(ensemble_preds, mean_preds, eps=1e-9):
     entropies = get_entropy(ensemble_preds, eps=eps)
     return get_entropy(mean_preds, eps=eps) - np.mean(entropies, axis=0)
 
+
 def get_inconsistency_metrics(ensemble_preds, top_n_voxels=500000, entr_eps=1e-9):
     labels = {}
-    
+
     mean_preds = ensemble_preds.mean(axis=0)
     std_preds = ensemble_preds.std(axis=0).flatten()
-    
+
     # take top uncertain pixels
     sorted_ids = np.argsort(mean_preds.flatten())
     std_preds_top = std_preds[sorted_ids][- 4 * top_n_voxels:]

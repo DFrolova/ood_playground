@@ -14,7 +14,6 @@ from .spectral_norm_conv import spectral_norm_conv
 from .spectral_norm_fc import spectral_norm_fc
 
 
-
 class PreActivationSpectralNorm(nn.Module):
     """
     Runs a sequence of batch_norm, activation, and spectral normalized convolutional ``layer``.
@@ -36,7 +35,7 @@ class PreActivationSpectralNorm(nn.Module):
     """
 
     def __init__(self, in_features: int, out_features: int, *,
-                 layer_module, batch_norm_module=None, activation_module=nn.ReLU, 
+                 layer_module, batch_norm_module=None, activation_module=nn.ReLU,
                  input_size, n_power_iterations=1, coeff=3, **kwargs):
         super().__init__()
         if batch_norm_module is not None:
@@ -45,9 +44,9 @@ class PreActivationSpectralNorm(nn.Module):
             self.bn = identity
         self.activation = activation_module()
         self.layer = layer_module(in_features, out_features, **kwargs)
-        
+
         kernel_size = kwargs['kernel_size']
-        
+
         if kernel_size == 1:
             # use spectral norm fc, because bound are tight for 1x1 convolutions
             self.layer = spectral_norm_fc(self.layer, coeff, n_power_iterations)
@@ -61,7 +60,7 @@ class PreActivationSpectralNorm(nn.Module):
     def forward(self, x):
         return self.layer(self.activation(self.bn(x)))
 
-    
+
 class ResBlockSpectralNorm(nn.Module):
     """
     Performs a sequence of two spectral normalized convolutions with residual connection (Residual Block).
@@ -97,14 +96,15 @@ class ResBlockSpectralNorm(nn.Module):
     kwargs
         additional arguments passed to ``conv_module``.
     """
-    
+
     def __init__(self, in_channels, out_channels, *, kernel_size, stride=1, padding=0, dilation=1, bias=False,
-                 activation_module=nn.ReLU, conv_module, batch_norm_module, input_size, coeff, n_power_iterations, **kwargs):
+                 activation_module=nn.ReLU, conv_module, batch_norm_module, input_size, coeff, n_power_iterations,
+                 **kwargs):
         super().__init__()
         # ### Features path ###
         pre_activation = partial(
             PreActivationSpectralNorm, kernel_size=kernel_size, padding=padding, dilation=dilation,
-            activation_module=activation_module, layer_module=conv_module, batch_norm_module=batch_norm_module, 
+            activation_module=activation_module, layer_module=conv_module, batch_norm_module=batch_norm_module,
             input_size=input_size, coeff=coeff, n_power_iterations=n_power_iterations, **kwargs
         )
 
@@ -120,7 +120,8 @@ class ResBlockSpectralNorm(nn.Module):
 
         if in_channels != out_channels or stride != 1:
             self.adjust_to_stride = conv_module(in_channels, out_channels, kernel_size=1, stride=stride, bias=bias)
-            self.adjust_to_stride = spectral_norm_fc(self.adjust_to_stride, coeff=coeff, n_power_iterations=n_power_iterations)
+            self.adjust_to_stride = spectral_norm_fc(self.adjust_to_stride, coeff=coeff,
+                                                     n_power_iterations=n_power_iterations)
         else:
             self.adjust_to_stride = identity
 
@@ -134,7 +135,8 @@ class ResBlockSpectralNorm(nn.Module):
 
 class UNetSpectralNorm(nn.Module):
     def __init__(self, ndim: int = 3, n_chans_in: int = 1, n_chans_out: int = 1, n_filters_init: int = 16,
-                 return_features_from: tuple = (3, ), x_patch_size: int = 80, coeff: float = 3., n_power_iterations: int = 1):
+                 return_features_from: tuple = (3,), x_patch_size: int = 80, coeff: float = 3.,
+                 n_power_iterations: int = 1):
         super().__init__()
         if ndim not in (2, 3,):
             raise ValueError(f'`ndim` should be in (2, 3). However, {ndim} is given.')
@@ -150,7 +152,9 @@ class UNetSpectralNorm(nn.Module):
 
         n = n_filters_init
 
-        filters = (n, n, 2*n, 2*n, 4*n, 4*n, 8*n, 8*n, 16*n, 16*n, 8*n, 8*n, 4*n, 4*n, 2*n, 2*n, n, n, n, n_chans_out)
+        filters = (
+        n, n, 2 * n, 2 * n, 4 * n, 4 * n, 8 * n, 8 * n, 16 * n, 16 * n, 8 * n, 8 * n, 4 * n, 4 * n, 2 * n, 2 * n, n, n,
+        n, n_chans_out)
         scales = (1, 1, 2, 2, 4, 4, 8, 8, 16, 16, 16, 8, 8, 4, 4, 2, 2, 1, 1, 1)
         self.layer2filters = {i: f for i, f in enumerate(filters, start=1)}
         self.layer2scale = {i: d for i, d in enumerate(scales, start=1)}
@@ -161,68 +165,68 @@ class UNetSpectralNorm(nn.Module):
         resblock = ResBlockSpectralNorm
         downsample = nn.MaxPool2d if (ndim == 2) else nn.MaxPool3d
         upsample = partial(nn.Upsample, mode='bilinear' if (ndim == 2) else 'trilinear')
-        
+
         resblock_kwargs = {'kernel_size': 3, 'padding': 1, 'coeff': coeff, 'n_power_iterations': n_power_iterations,
                            'conv_module': nn.Conv3d, 'batch_norm_module': partial(SpectralBatchNorm3d, coeff=coeff)}
 
         self.init_path = nn.Sequential(
-            resblock(n_chans_in, n, input_size=x_patch_size, **resblock_kwargs),                  # 1
-            resblock(n, n, input_size=x_patch_size, **resblock_kwargs),                           # 2
+            resblock(n_chans_in, n, input_size=x_patch_size, **resblock_kwargs),  # 1
+            resblock(n, n, input_size=x_patch_size, **resblock_kwargs),  # 2
         )
 
         self.down1 = nn.Sequential(
             downsample(2, 2, ceil_mode=True),
-            resblock(n, n * 2, input_size=x_patch_size // 2, **resblock_kwargs),                       # 3
-            resblock(n * 2, n * 2, input_size=x_patch_size // 2, **resblock_kwargs)                    # 4
+            resblock(n, n * 2, input_size=x_patch_size // 2, **resblock_kwargs),  # 3
+            resblock(n * 2, n * 2, input_size=x_patch_size // 2, **resblock_kwargs)  # 4
         )
 
         self.down2 = nn.Sequential(
             downsample(2, 2, ceil_mode=True),
-            resblock(n * 2, n * 4, input_size=x_patch_size // 4, **resblock_kwargs),                   # 5
-            resblock(n * 4, n * 4, input_size=x_patch_size // 4, **resblock_kwargs)                    # 6
+            resblock(n * 2, n * 4, input_size=x_patch_size // 4, **resblock_kwargs),  # 5
+            resblock(n * 4, n * 4, input_size=x_patch_size // 4, **resblock_kwargs)  # 6
         )
 
         self.down3 = nn.Sequential(
             downsample(2, 2, ceil_mode=True),
-            resblock(n * 4, n * 8, input_size=x_patch_size // 8, **resblock_kwargs),                   # 7
-            resblock(n * 8, n * 8, input_size=x_patch_size // 8, **resblock_kwargs)                    # 8
+            resblock(n * 4, n * 8, input_size=x_patch_size // 8, **resblock_kwargs),  # 7
+            resblock(n * 8, n * 8, input_size=x_patch_size // 8, **resblock_kwargs)  # 8
         )
 
         self.bottleneck = nn.Sequential(
             downsample(2, 2, ceil_mode=True),
-            resblock(n * 8, n * 16, input_size=x_patch_size // 16, **resblock_kwargs),                  # 9
-            resblock(n * 16, n * 16, input_size=x_patch_size // 16, **resblock_kwargs),                 # 10
-            resblock(n * 16, n * 8, input_size=x_patch_size // 16, **resblock_kwargs),                  # 11
+            resblock(n * 8, n * 16, input_size=x_patch_size // 16, **resblock_kwargs),  # 9
+            resblock(n * 16, n * 16, input_size=x_patch_size // 16, **resblock_kwargs),  # 10
+            resblock(n * 16, n * 8, input_size=x_patch_size // 16, **resblock_kwargs),  # 11
             upsample(scale_factor=2, align_corners=True),
         )
 
         self.up3 = nn.Sequential(
-            resblock(n * 8, n * 8, input_size=x_patch_size // 8, **resblock_kwargs),                   # 12
-            resblock(n * 8, n * 4, input_size=x_patch_size // 8, **resblock_kwargs),                   # 13
+            resblock(n * 8, n * 8, input_size=x_patch_size // 8, **resblock_kwargs),  # 12
+            resblock(n * 8, n * 4, input_size=x_patch_size // 8, **resblock_kwargs),  # 13
             upsample(scale_factor=2, align_corners=True),
         )
 
         self.up2 = nn.Sequential(
-            resblock(n * 4, n * 4, input_size=x_patch_size // 4, **resblock_kwargs),                   # 14
-            resblock(n * 4, n * 2, input_size=x_patch_size // 4, **resblock_kwargs),                   # 15
+            resblock(n * 4, n * 4, input_size=x_patch_size // 4, **resblock_kwargs),  # 14
+            resblock(n * 4, n * 2, input_size=x_patch_size // 4, **resblock_kwargs),  # 15
             upsample(scale_factor=2, align_corners=True),
         )
 
         self.up1 = nn.Sequential(
-            resblock(n * 2, n * 2, input_size=x_patch_size // 2, **resblock_kwargs),                   # 16
-            resblock(n * 2, n, input_size=x_patch_size // 2, **resblock_kwargs),                       # 17
+            resblock(n * 2, n * 2, input_size=x_patch_size // 2, **resblock_kwargs),  # 16
+            resblock(n * 2, n, input_size=x_patch_size // 2, **resblock_kwargs),  # 17
             upsample(scale_factor=2, align_corners=True),
         )
 
         self.out_path = nn.Sequential(
-            resblock(n, n, input_size=x_patch_size, **resblock_kwargs),                           # 18
-            resblock(n, n, input_size=x_patch_size, **resblock_kwargs),                           # 19
+            resblock(n, n, input_size=x_patch_size, **resblock_kwargs),  # 18
+            resblock(n, n, input_size=x_patch_size, **resblock_kwargs),  # 19
             # TODO replace with gaussian process???
             resblock(n, n_chans_out, input_size=x_patch_size, kernel_size=1, padding=0,
-                     bias=True, conv_module=resblock_kwargs['conv_module'], 
+                     bias=True, conv_module=resblock_kwargs['conv_module'],
                      batch_norm_module=resblock_kwargs['batch_norm_module'],
-                     coeff=resblock_kwargs['coeff'], 
-                     n_power_iterations=resblock_kwargs['n_power_iterations']),      # 20
+                     coeff=resblock_kwargs['coeff'],
+                     n_power_iterations=resblock_kwargs['n_power_iterations']),  # 20
         )
 
     @staticmethod
@@ -268,9 +272,9 @@ class UNetSpectralNorm(nn.Module):
             warnings.filterwarnings('default')
 
             return x_out
-        
-        
+
+
 class UNetSpectralNormFeatureExtractor(UNetSpectralNorm):
-    
+
     def forward(self, x: torch.Tensor):
         return super().forward(x, return_features=True)[1]

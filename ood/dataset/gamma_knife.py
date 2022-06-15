@@ -98,13 +98,13 @@ class Rescale3D(Change):
 
     def load_orig_spacing(self, i):
         return self._shadowed.load_spacing(i)
-    
+
 
 class RotateImage(Change):
     def _change(self, x, i):
         return np.flip(np.rot90(x, k=3, axes=(-3, -2)), axis=SPATIAL_DIMS[2])
-    
-    
+
+
 class CropToScull(Change):
     def _skull_bbox(self, scan, kernel_size=14, q=70, k=10):
         scan = scan - scan.min()
@@ -127,6 +127,6 @@ class CropToScull(Change):
         bbox = mask2bounding_box(mask & (scan > scan.max() / k))
 
         return bbox
-    
+
     def _change(self, x, i):
         return crop_to_box(x, self._skull_bbox(self._shadowed.load_image(i)))

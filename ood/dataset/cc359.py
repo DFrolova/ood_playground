@@ -4,10 +4,10 @@ from dpipe.dataset.segmentation import MultichannelSegmentationFromCSV
 
 
 class CC359(MultichannelSegmentationFromCSV):
-    def __init__(self, data_path, modalities=('MRI', ), target='brain_mask', metadata_rpath='meta.csv', index_col='id'):
+    def __init__(self, data_path, modalities=('MRI',), target='brain_mask', metadata_rpath='meta.csv', index_col='id'):
         super().__init__(data_path=data_path,
                          modalities=modalities,
-                         targets=(target, ),
+                         targets=(target,),
                          metadata_rpath=metadata_rpath,
                          index_col=index_col)
         self.n_domains = len(self.df['fold'].unique())

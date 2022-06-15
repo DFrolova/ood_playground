@@ -48,12 +48,12 @@ class SpectralNormFC(SpectralNorm):
 
     @staticmethod
     def apply(
-        module: nn.Module,
-        coeff: float,
-        name: str,
-        n_power_iterations: int,
-        dim: int,
-        eps: float,
+            module: nn.Module,
+            coeff: float,
+            name: str,
+            n_power_iterations: int,
+            dim: int,
+            eps: float,
     ) -> "SpectralNormFC":
         for k, hook in module._forward_pre_hooks.items():
             if isinstance(hook, SpectralNorm) and hook.name == name:
@@ -91,12 +91,12 @@ class SpectralNormFC(SpectralNorm):
 
 
 def spectral_norm_fc(
-    module,
-    coeff: float,
-    n_power_iterations: int = 1,
-    name: str = "weight",
-    eps: float = 1e-12,
-    dim: int = None,
+        module,
+        coeff: float,
+        n_power_iterations: int = 1,
+        name: str = "weight",
+        eps: float = 1e-12,
+        dim: int = None,
 ):
     """
     Args:
@@ -125,12 +125,12 @@ def spectral_norm_fc(
     """
     if dim is None:
         if isinstance(
-            module,
-            (
-                torch.nn.ConvTranspose1d,
-                torch.nn.ConvTranspose2d,
-                torch.nn.ConvTranspose3d,
-            ),
+                module,
+                (
+                        torch.nn.ConvTranspose1d,
+                        torch.nn.ConvTranspose2d,
+                        torch.nn.ConvTranspose3d,
+                ),
         ):
             dim = 1
         else:

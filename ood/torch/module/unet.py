@@ -16,7 +16,7 @@ from dpipe.itertools import zip_equal
 
 class UNet(nn.Module):
     def __init__(self, ndim: int = 3, n_chans_in: int = 1, n_chans_out: int = 1, n_filters_init: int = 16,
-                 return_features_from: tuple = (3, )):
+                 return_features_from: tuple = (3,)):
         super().__init__()
         if ndim not in (2, 3,):
             raise ValueError(f'`ndim` should be in (2, 3). However, {ndim} is given.')
@@ -32,7 +32,9 @@ class UNet(nn.Module):
 
         n = n_filters_init
 
-        filters = (n, n, 2*n, 2*n, 4*n, 4*n, 8*n, 8*n, 16*n, 16*n, 8*n, 8*n, 4*n, 4*n, 2*n, 2*n, n, n, n, n_chans_out)
+        filters = (
+        n, n, 2 * n, 2 * n, 4 * n, 4 * n, 8 * n, 8 * n, 16 * n, 16 * n, 8 * n, 8 * n, 4 * n, 4 * n, 2 * n, 2 * n, n, n,
+        n, n_chans_out)
         scales = (1, 1, 2, 2, 4, 4, 8, 8, 16, 16, 16, 8, 8, 4, 4, 2, 2, 1, 1, 1)
         self.layer2filters = {i: f for i, f in enumerate(filters, start=1)}
         self.layer2scale = {i: d for i, d in enumerate(scales, start=1)}
@@ -45,58 +47,58 @@ class UNet(nn.Module):
         upsample = partial(nn.Upsample, mode='bilinear' if (ndim == 2) else 'trilinear')
 
         self.init_path = nn.Sequential(
-            resblock(n_chans_in, n, kernel_size=3, padding=1),                  # 1
-            resblock(n, n, kernel_size=3, padding=1),                           # 2
+            resblock(n_chans_in, n, kernel_size=3, padding=1),  # 1
+            resblock(n, n, kernel_size=3, padding=1),  # 2
         )
 
         self.down1 = nn.Sequential(
             downsample(2, 2, ceil_mode=True),
-            resblock(n, n * 2, kernel_size=3, padding=1),                       # 3
-            resblock(n * 2, n * 2, kernel_size=3, padding=1)                    # 4
+            resblock(n, n * 2, kernel_size=3, padding=1),  # 3
+            resblock(n * 2, n * 2, kernel_size=3, padding=1)  # 4
         )
 
         self.down2 = nn.Sequential(
             downsample(2, 2, ceil_mode=True),
-            resblock(n * 2, n * 4, kernel_size=3, padding=1),                   # 5
-            resblock(n * 4, n * 4, kernel_size=3, padding=1)                    # 6
+            resblock(n * 2, n * 4, kernel_size=3, padding=1),  # 5
+            resblock(n * 4, n * 4, kernel_size=3, padding=1)  # 6
         )
 
         self.down3 = nn.Sequential(
             downsample(2, 2, ceil_mode=True),
-            resblock(n * 4, n * 8, kernel_size=3, padding=1),                   # 7
-            resblock(n * 8, n * 8, kernel_size=3, padding=1)                    # 8
+            resblock(n * 4, n * 8, kernel_size=3, padding=1),  # 7
+            resblock(n * 8, n * 8, kernel_size=3, padding=1)  # 8
         )
 
         self.bottleneck = nn.Sequential(
             downsample(2, 2, ceil_mode=True),
-            resblock(n * 8, n * 16, kernel_size=3, padding=1),                  # 9
-            resblock(n * 16, n * 16, kernel_size=3, padding=1),                 # 10
-            resblock(n * 16, n * 8, kernel_size=3, padding=1),                  # 11
+            resblock(n * 8, n * 16, kernel_size=3, padding=1),  # 9
+            resblock(n * 16, n * 16, kernel_size=3, padding=1),  # 10
+            resblock(n * 16, n * 8, kernel_size=3, padding=1),  # 11
             upsample(scale_factor=2, align_corners=True),
         )
 
         self.up3 = nn.Sequential(
-            resblock(n * 8, n * 8, kernel_size=3, padding=1),                   # 12
-            resblock(n * 8, n * 4, kernel_size=3, padding=1),                   # 13
+            resblock(n * 8, n * 8, kernel_size=3, padding=1),  # 12
+            resblock(n * 8, n * 4, kernel_size=3, padding=1),  # 13
             upsample(scale_factor=2, align_corners=True),
         )
 
         self.up2 = nn.Sequential(
-            resblock(n * 4, n * 4, kernel_size=3, padding=1),                   # 14
-            resblock(n * 4, n * 2, kernel_size=3, padding=1),                   # 15
+            resblock(n * 4, n * 4, kernel_size=3, padding=1),  # 14
+            resblock(n * 4, n * 2, kernel_size=3, padding=1),  # 15
             upsample(scale_factor=2, align_corners=True),
         )
 
         self.up1 = nn.Sequential(
-            resblock(n * 2, n * 2, kernel_size=3, padding=1),                   # 16
-            resblock(n * 2, n, kernel_size=3, padding=1),                       # 17
+            resblock(n * 2, n * 2, kernel_size=3, padding=1),  # 16
+            resblock(n * 2, n, kernel_size=3, padding=1),  # 17
             upsample(scale_factor=2, align_corners=True),
         )
 
         self.out_path = nn.Sequential(
-            resblock(n, n, kernel_size=3, padding=1),                           # 18
-            resblock(n, n, kernel_size=3, padding=1),                           # 19
-            resblock(n, n_chans_out, kernel_size=1, padding=0, bias=True),      # 20
+            resblock(n, n, kernel_size=3, padding=1),  # 18
+            resblock(n, n, kernel_size=3, padding=1),  # 19
+            resblock(n, n_chans_out, kernel_size=1, padding=0, bias=True),  # 20
         )
 
     @staticmethod
@@ -143,7 +145,7 @@ class UNet(nn.Module):
 
             return x_out
 
-        
+
 class UNet3D_MC_Dropout(nn.Module):
     def __init__(self, n_chans_in: int = 1, n_chans_out: int = 1, n_filters_init: int = 16, p_dropout: float = 0.1):
         super().__init__()
@@ -216,8 +218,7 @@ class UNet3D_MC_Dropout(nn.Module):
             ResBlock3d(n, n, kernel_size=3, padding=1),
             ResBlock3d(n, n_chans_out, kernel_size=1, padding=0, bias=True),
         )
-        
-        
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         warnings.filterwarnings('ignore')
         x0 = self.init_path(x)
@@ -230,7 +231,7 @@ class UNet3D_MC_Dropout(nn.Module):
         x_out = self.out_path(x1_up + x0)
         warnings.filterwarnings('default')
         return x_out
-    
+
 
 class UNet3DLuna(nn.Module):
     def __init__(self, init_bias: float = None):
@@ -288,7 +289,7 @@ class ResBlockDropout(nn.Module):
         # ### Features path ###
         pre_activation = partial(
             PreActivationND, kernel_size=kernel_size, padding=padding, dilation=dilation,
-            activation_module=activation_module, conv_module=conv_module, 
+            activation_module=activation_module, conv_module=conv_module,
             batch_norm_module=batch_norm_module, **kwargs)
 
         self.conv_path = nn.Sequential(pre_activation(in_channels, out_channels, stride=stride, bias=False),
@@ -313,8 +314,8 @@ class ResBlockDropout(nn.Module):
         axes = range(-len(shape), 0)
         x_skip = crop_to_shape(self.adjust_to_stride(x), shape=shape, axis=axes)
         return x_conv + x_skip
-        
-    
+
+
 class UNet3DLunaMCDropout(nn.Module):
     def __init__(self, init_bias: float = None, p_dropout: float = 0.1):
         super().__init__()
@@ -324,10 +325,10 @@ class UNet3DLunaMCDropout(nn.Module):
         self.unet = nn.Sequential(
             nn.Conv3d(1, 8, kernel_size=3, padding=1),
             layers.FPN(
-                layer=partial(ResBlockDropout, conv_module=nn.Conv3d, batch_norm_module=nn.BatchNorm3d, 
+                layer=partial(ResBlockDropout, conv_module=nn.Conv3d, batch_norm_module=nn.BatchNorm3d,
                               dropout_module=nn.Dropout, p_dropout=p_dropout),
-#                 layer=lambda in_, out, *args, **kwargs: nn.Sequential(layers.ResBlock3d(in_, out, *args, **kwargs),
-#                                                                       nn.Dropout(p=self.p_dropout)),
+                #                 layer=lambda in_, out, *args, **kwargs: nn.Sequential(layers.ResBlock3d(in_, out, *args, **kwargs),
+                #                                                                       nn.Dropout(p=self.p_dropout)),
                 downsample=nn.MaxPool3d(2, ceil_mode=True),
                 upsample=nn.Identity,
                 merge=lambda left, down: torch.add(
@@ -357,10 +358,10 @@ class UNet3DLunaMCDropout(nn.Module):
 
     def forward(self, x):
         return self.head(self.forward_features(x))
-    
-    
+
+
 class FPN_WithFeatures(layers.FPN):
-    
+
     def forward(self, x):
         levels, results = [], []
         for i, (layer, down, middle) in enumerate(zip_equal(self.down_path, self.downsample, self.middle_path)):
@@ -371,8 +372,8 @@ class FPN_WithFeatures(layers.FPN):
                 break
 
         return x1
-    
-    
+
+
 class UNet3DLunaWithFeatures(nn.Module):
     def __init__(self, init_bias: float = None):
         super().__init__()
@@ -405,7 +406,7 @@ class UNet3DLunaWithFeatures(nn.Module):
         self.head = layers.PreActivation3d(8, 1, kernel_size=1)
         if init_bias is not None:
             self.head.layer.bias = nn.Parameter(torch.tensor([init_bias], dtype=torch.float32))
-            
+
         self.upsample = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=True)
 
     def forward_features(self, x):

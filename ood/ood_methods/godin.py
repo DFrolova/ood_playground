@@ -16,16 +16,16 @@ def evaluate_individual_metrics_godin(load_y, load_x, predict, metrics: dict, te
 
     results = defaultdict(dict)
     for _id in tqdm(test_ids):
-        
+
         image = load_x(_id)
-        
+
         if has_targets:
             target = load_y(_id)
         else:
             target = np.zeros_like(image)
-        
+
         prediction, scores = predict(image)
-                
+
         results['godin'][_id] = scores.mean()
 
         for metric_name, metric in metrics.items():
@@ -40,29 +40,29 @@ def evaluate_individual_metrics_godin(load_y, load_x, predict, metrics: dict, te
 
     for metric_name, result in results.items():
         save_json(result, os.path.join(results_path, metric_name + '.json'), indent=0)
-        
-        
+
+
 def evaluate_individual_metrics_godin_with_crops(load_x, load_y, predict, predict_logit, test_ids, n_repeats,
                                                  metrics: dict, spatial_boxes_path, results_path, exist_ok=False):
     assert len(metrics) > 0, 'No metric provided'
     os.makedirs(results_path, exist_ok=exist_ok)
-    
+
     spatial_boxes = load(spatial_boxes_path)
 
     results = defaultdict(dict)
-    
+
     for _id in tqdm(test_ids):
         image = load_x(_id)
         target = load_y(_id)
-        
+
         for i in range(n_repeats):
             spatial_box = spatial_boxes[_id + '_' + str(i)]
             image_cropped = crop_to_box(image, box=spatial_box, padding_values=np.min, axis=SPATIAL_DIMS)
             target_cropped = crop_to_box(target, box=spatial_box, padding_values=np.min, axis=SPATIAL_DIMS)
-            
+
             prediction, scores = predict(image_cropped)
             results['godin'][_id + '_' + str(i)] = scores.mean()
-            
+
             for metric_name, metric in metrics.items():
                 if metric_name == 'froc_records':
                     logit = predict_logit(image_cropped)
@@ -72,7 +72,7 @@ def evaluate_individual_metrics_godin_with_crops(load_x, load_y, predict, predic
                         results[metric_name][_id + '_' + str(i)] = metric(target_cropped, prediction, _id)
                     except TypeError:
                         results[metric_name][_id + '_' + str(i)] = metric(target_cropped, prediction)
-                        
+
             for metric_name, metric in metrics.items():
                 if metric_name == 'froc_records':
                     logit = predict_logit(image_cropped)
