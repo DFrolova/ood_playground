@@ -37,7 +37,7 @@ in `surface_distance/metrics.py` to
 For all datasets you need to specify the local path 
 to a folder with the preprocessed dataset in the file `ood/paths.py`.
 
-#### 1. LIDC dataset
+#### LIDC dataset
 Download the dataset
 [here](https://wiki.cancerimagingarchive.net/display/Public/LIDC-IDRI).
 For the benchmarking purposes you need to download only "Images (DICOM, 125GB)".
@@ -85,4 +85,34 @@ python scripts/preproc_lidc.py -i <raw_data_path>/LIDC-IDRI -o <preprocess_data_
 which contains folders `LIDC-IDRI-{i}`.
 
 Now you can use `<preprocess_data_path>`
-as path to LIDC dataset in `ood/paths.py`
+as a path to the LIDC dataset in `ood/paths.py`
+
+
+#### MIDRC dataset
+
+MIDRC dataset can be downloaded on
+[TCIA web page](https://wiki.cancerimagingarchive.net/pages/viewpage.action?pageId=80969742).
+For the benchmarking purposes you need to download "Images (DICOM, 11 GB)"
+and "Annotations (JSON)" files.
+
+The steps are the same as in LIDC downloading and preprocessing
+except the file names.
+So here we skip NBIA Data Retriever CLI installation steps;
+see [LIDC dataset section](#LIDC dataset).
+
+1. Download the `.tcia` file and place it anywhere on your computer,
+e.g., `~/MIDRC-RICORD-1a.tcia`.
+
+2. Run the downloading script:
+`~/NBIA_data_retriever_CLI/nbia_cli_linux_amd64 -i ~/MIDRC-RICORD-1a.tcia -o <raw_data_path>`. 
+You need to specify `<raw_data_path>`, where to download the data.
+
+3. Download `.json` annotations file, unzip it, and place in folder `<raw_data_path>`.
+(Keep its filename the same.)
+
+4. Run our preprocessing script:
+`python scripts/preproc_midrc.py -i <raw_data_path> -o <preprocess_data_path>`
+
+Now you can use `<preprocess_data_path>`
+as a path to the MIDRC dataset in `ood/paths.py`
+
