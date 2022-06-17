@@ -29,8 +29,8 @@ def main():
     os.makedirs(dst / 'masks')
 
     records = []
-    for batch, rpath in enumerate(['media/nas/01_Datasets/CT/LITS/Training Batch 1',
-                                   'media/nas/01_Datasets/CT/LITS/Training Batch 2'], start=1):
+    for batch_id, rpath in enumerate(['media/nas/01_Datasets/CT/LITS/Training Batch 1',
+                                      'media/nas/01_Datasets/CT/LITS/Training Batch 2'], start=1):
         all_fnames = [fname for fname in os.listdir(src / rpath)]
         ids = np.unique(list(map(lambda s: s.strip('.nii').split('-')[-1], all_fnames)))
         id2paths = {_id: {'image': src / rpath / f'volume-{_id}.nii',
@@ -51,7 +51,7 @@ def main():
             image_rpath = f'images/{_id}.npy.gz'
             mask_rpath = f'masks/{_id}.npy.gz'
             records.append({'ID': f'lits_{_id}', 'CT': image_rpath, 'mask': mask_rpath, 'x': spacing[0],
-                            'y': spacing[1], 'z': spacing[2], 'n_tumors': n_tumors})
+                            'y': spacing[1], 'z': spacing[2], 'n_tumors': n_tumors, 'batch_id': batch_id})
 
             save(image, dst / image_rpath, compression=1)
             save(mask, dst / mask_rpath, compression=1)
