@@ -12,8 +12,8 @@ from dpipe.io import load, save
 
 
 # BACKGROUND_MASK_ID = 0
-LIVER_MASK_ID = 1
-# TUMOR_MASK_ID = 2
+# LIVER_MASK_ID = 1
+TUMOR_MASK_ID = 2
 
 
 def main():
