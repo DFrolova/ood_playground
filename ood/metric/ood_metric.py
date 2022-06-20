@@ -58,6 +58,13 @@ def get_entropy(prediction, eps=1e-9):
     return uncertainty_result
 
 
+def get_mean_of_ones(y_true, prediction):
+    result = 1 - np.mean(prediction[prediction > 0.5])
+    if np.isnan(result):
+        return 0.
+    return result
+
+
 def get_mutual_info(ensemble_preds, mean_preds, eps=1e-9):
     entropies = get_entropy(ensemble_preds, eps=eps)
     return get_entropy(mean_preds, eps=eps) - np.mean(entropies, axis=0)
@@ -67,7 +74,9 @@ def get_inconsistency_metrics(ensemble_preds, top_n_voxels=500000, entr_eps=1e-9
     labels = {}
 
     mean_preds = ensemble_preds.mean(axis=0)
-    labels['mean_of_ones'] = 1 - np.mean(mean_preds[mean_preds > 0.5])
+    labels['mean_of_ones'] = get_mean_of_ones(None, mean_preds)
+    labels['entropy'] = get_entropy_metric(None, mean_preds)
+    labels['maxprob'] = get_maxprob_metric(None, mean_preds)
     std_preds = ensemble_preds.std(axis=0).flatten()
 
     # take top uncertain pixels
