@@ -67,6 +67,7 @@ def get_inconsistency_metrics(ensemble_preds, top_n_voxels=500000, entr_eps=1e-9
     labels = {}
 
     mean_preds = ensemble_preds.mean(axis=0)
+    labels['mean_of_ones'] = 1 - np.mean(mean_preds[mean_preds > 0.5])
     std_preds = ensemble_preds.std(axis=0).flatten()
 
     # take top uncertain pixels
