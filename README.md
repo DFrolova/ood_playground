@@ -116,3 +116,20 @@ You need to specify `<raw_data_path>`, where to download the data.
 Now you can use `<preprocess_data_path>`
 as a path to the MIDRC dataset in `ood/paths.py`
 
+
+#### LiTS dataset
+
+For the LiTS dataset you need to download LiTS competition
+[training data](https://competitions.codalab.org/competitions/17094).
+
+1. Download both archives (`Training_Batch1.zip` and `Training_Batch2.zip`) in folder
+`raw_data_path`. Then unzip them there: 
+    - `cd <raw_data_path>`
+    - `unzip Training_Batch1.zip`
+    - `unzip Training_Batch2.zip`
+    
+2. Run our preprocessing script:
+`python scripts/preproc_lits.py -i <raw_data_path> -o <preprocess_data_path>`
+
+Now you can use `<preprocess_data_path>`
+as a path to the LiTS dataset in `ood/paths.py`
