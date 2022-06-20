@@ -6,7 +6,7 @@ Here you may find a plenty of useful and lots of useless code.
 
 ### Setting up the Libraries:
 
-###### 1. Install `brain-segm` module:
+###### 1. Install `ood-playground` module:
 
 ```
 git clone https://gitlab.com/ira-labs/projects/research/ood-playground.git
