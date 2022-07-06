@@ -53,11 +53,11 @@ ENSEMBLE_MODELS_PATH_CC359 = choose_root(
 )
 
 ENSEMBLE_MODELS_PATH_LIDC = choose_root(
-    '/shared/experiments/ood_playground/luna/luna/',
+    '/shared/experiments/ood_playground/luna_no_crop/luna/',
     '/',  # TODO: avoiding `FileNotFoundError`
 )
 
 ENSEMBLE_MODELS_PATH_MIDRC = choose_root(
-    '/shared/experiments/ood_playground/midrc/midrc/',
+    '/shared/experiments/ood_playground/midrc_no_crop/midrc/',
     '/',  # TODO: avoiding `FileNotFoundError`
 )

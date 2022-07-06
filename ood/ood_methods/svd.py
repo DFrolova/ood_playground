@@ -22,6 +22,14 @@ def get_singular_vectors_and_values(feature_map):
     return u[:5], S, normalized_S
 
 
+def get_singular_values(feature_map):
+    feature_map = feature_map.reshape(feature_map.shape[0], -1).astype(np.float32)
+    S = np.linalg.svd(feature_map, full_matrices=False, compute_uv=False)
+    normalized_S = np.log(S)
+    normalized_S /= np.linalg.norm(normalized_S)
+    return S, normalized_S
+
+
 # def get_spectrum(feature_map):
 #     feature_map = feature_map.reshape(feature_map.shape[0], -1).astype(np.float32)
 #     u, S, v = np.linalg.svd(feature_map, full_matrices=False, compute_uv=True)

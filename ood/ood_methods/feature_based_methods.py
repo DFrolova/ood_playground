@@ -5,7 +5,7 @@ from collections import defaultdict
 import numpy as np
 
 from dpipe.io import load, save_json, save, load_json
-from ood.ood_methods.svd import get_singular_vectors_and_values
+from ood.ood_methods.svd import get_singular_vectors_and_values, get_singular_values
 from ood.ood_methods.feature_statistics import get_mean_std
 
 
@@ -59,11 +59,12 @@ def get_ood_scores_from_embedding(test_ids, train_predictions_path, spectrum_fol
 
 
 def get_all_scores_from_features(predict_fn, load_x, test_ids, train_predictions_path, results_path,
-                                 exist_ok=False):
+                                 exist_ok=False, compute_sing_vectors=True):
 
     if not os.path.exists('spectrum'):
-        for i in range(1, 6):
-            os.makedirs(f'sing_vector_{i}', exist_ok=exist_ok)
+        if compute_sing_vectors:
+            for i in range(1, 6):
+                os.makedirs(f'sing_vector_{i}', exist_ok=exist_ok)
 
         os.makedirs('spectrum', exist_ok=exist_ok)
         os.makedirs('normalized_spectrum', exist_ok=exist_ok)
@@ -72,19 +73,28 @@ def get_all_scores_from_features(predict_fn, load_x, test_ids, train_predictions
 
         for uid in tqdm(test_ids):
             feature_map = predict_fn(load_x(uid))
-            u, s, s_norm = get_singular_vectors_and_values(feature_map)
+            if compute_sing_vectors:
+                if uid != 'lits-train-22': # TODO remove
+                    u, s, s_norm = get_singular_vectors_and_values(feature_map)
+                else:
+                    u, s, s_norm = np.zeros_like(u), np.zeros_like(s), np.zeros_like(s_norm)
+                for i in range(1, 6):
+                    save(u[:i].flatten(), f'sing_vector_{i}/{uid}.npy')
+            else:
+                s, s_norm = get_singular_values(feature_map)
+                
             mean_std_embed = get_mean_std(feature_map)
-
-            for i in range(1, 6):
-                save(u[:i].flatten(), f'sing_vector_{i}/{uid}.npy')
 
             save(s, f'spectrum/{uid}.npy')
             save(s_norm, f'normalized_spectrum/{uid}.npy')
             save(mean_std_embed[:int(len(mean_std_embed) // 2)], f'mean/{uid}.npy')
             save(mean_std_embed, f'mean_std/{uid}.npy')
+            
+    all_methods = ['spectrum', 'normalized_spectrum', 'mean', 'mean_std']
+    if compute_sing_vectors:
+        all_methods += [f'sing_vector_{i}' for i in range(1, 6)]
 
-    for embedding_folder in tqdm(['spectrum', 'normalized_spectrum', 'mean', 'mean_std'] + [f'sing_vector_{i}' for i in
-                                                                                            range(1, 6)]):
+    for embedding_folder in tqdm(all_methods):
         for postfix in ['init', 'scale', 'norm']:
             get_ood_scores_from_embedding(test_ids=test_ids, train_predictions_path=train_predictions_path,
                                           spectrum_folder=embedding_folder, results_path=results_path,
