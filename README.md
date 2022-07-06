@@ -6,7 +6,7 @@ Here you may find a plenty of useful and lots of useless code.
 
 ### Setting up the Libraries:
 
-###### 1. Install `brain-segm` module:
+###### 1. Install `ood-playground` module:
 
 ```
 git clone https://gitlab.com/ira-labs/projects/research/ood-playground.git
@@ -121,6 +121,20 @@ as a path to the MIDRC dataset in `ood/paths.py`
 
 For the LiTS dataset you need to download LiTS competition
 [training data](https://competitions.codalab.org/competitions/17094).
+
+*****
+
+*Private shortcut to download the data:*
+
+
+1. `pip install gdown`
+2. `cd <raw_data_path>`
+3. `gdown "https://drive.google.com/uc?id=0B0vscETPGI1-TE5KWFgxaURubFE&resourcekey=0-0fwNqxVQJSfYDvSt1Kr_Sg"`
+4. `gdown gdown "https://drive.google.com/uc?id=0B0vscETPGI1-cTZGbTU4UC05Qm8&resourcekey=0-qf26pTzXmgVv_qznEBDNqQ"`
+
+*****
+
+Preprocessing instructions:
 
 1. Download both archives (`Training_Batch1.zip` and `Training_Batch2.zip`) in folder
 `raw_data_path`. Then unzip them there: 

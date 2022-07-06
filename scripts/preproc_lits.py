@@ -8,12 +8,14 @@ import nibabel as nb
 from tqdm import tqdm
 from skimage.measure import label
 
-from dpipe.io import load, save
+from dpipe.io import save
 
 
 # BACKGROUND_MASK_ID = 0
 # LIVER_MASK_ID = 1
 TUMOR_MASK_ID = 2
+
+NOT_FLIP_IDS = list(map(str, range(28, 48)))  # manually checked ids
 
 
 def main():
@@ -38,13 +40,17 @@ def main():
                     for _id in ids}
 
         for _id, paths in tqdm(id2paths.items()):
-            image_nii = nb.nifti1.Nifti1Image.from_filename(paths['image'])
-            image_nii = nb.as_closest_canonical(image_nii)
+            image_nii = nb.as_closest_canonical(nb.nifti1.Nifti1Image.from_filename(paths['image']))
+            mask_nii = nb.as_closest_canonical(nb.nifti1.Nifti1Image.from_filename(paths['mask']))
 
             spacing = image_nii.header.get_zooms()
 
-            image = np.moveaxis(load(paths['image']), 1, 0)[::-1, :, ::-1].astype(np.int16)
-            mask = np.moveaxis(load(paths['mask']), 1, 0)[::-1, :, ::-1].astype(np.int16)
+            if _id in NOT_FLIP_IDS:
+                image = np.moveaxis(image_nii.get_fdata(), 1, 0)[::-1, :, ::-1].astype(np.int16)
+                mask = np.moveaxis(mask_nii.get_fdata(), 1, 0)[::-1, :, ::-1].astype(np.int16)
+            else:
+                image = np.moveaxis(image_nii.get_fdata(), 1, 0)[::-1, ::-1, ::-1].astype(np.int16)
+                mask = np.moveaxis(mask_nii.get_fdata(), 1, 0)[::-1, ::-1, ::-1].astype(np.int16)
 
             _, n_tumors = label(mask == TUMOR_MASK_ID, connectivity=3, return_num=True)
 
