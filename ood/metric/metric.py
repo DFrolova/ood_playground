@@ -414,11 +414,11 @@ def froc_records(segm, pred, logit):
     return records
 
 
-def exp2froc_df(exp_path, n_val=1, specific_ids=None):
+def exp2froc_df(exp_path, n_val=1, specific_ids=None, metric_file_name='froc_records.json'):
     """Constructs pandas DataFrame with froc data from all predictions in ``exp_path``."""
     dfs = []
     for n in range(n_val):
-        froc_path = os.path.join(exp_path, f'experiment_{n}', 'test_metrics', 'froc_records.json')
+        froc_path = os.path.join(exp_path, f'experiment_{n}', 'test_metrics', metric_file_name)
         froc_dicts = load_json(froc_path)
 
         for _id in froc_dicts.keys():

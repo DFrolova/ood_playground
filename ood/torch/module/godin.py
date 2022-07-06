@@ -1,4 +1,5 @@
 import warnings
+from functools import partial
 
 import torch
 from torch import nn
@@ -6,6 +7,47 @@ from torch import nn
 from dpipe import layers
 from dpipe.layers.resblock import ResBlock, ResBlock2d, ResBlock3d
 from ood.torch.module.unet import UNet, UNet3DLuna
+
+
+# class UNet_GODIN(UNet):
+#     def __init__(self, ndim: int = 3, n_chans_in: int = 1, n_chans_out: int = 1, n_filters_init: int = 16,
+#                  return_features_from: tuple = (3,)):
+#         super().__init__()
+
+#         n = n_filters_init
+#         resblock = ResBlock2d if (ndim == 2) else ResBlock3d
+#         pre_activation = partial(
+#             layers.PreActivationND, kernel_size=1, padding=0, dilation=1,
+#             activation_module=nn.ReLU, conv_module=nn.Conv3d, batch_norm_module=nn.BatchNorm3d
+#         )
+
+#         self.out_path = nn.Sequential(
+#             resblock(n, n, kernel_size=3, padding=1),  # 18
+#             resblock(n, n, kernel_size=3, padding=1),  # 19
+#             pre_activation(n, n, stride=1, bias=False)
+#         )
+
+#         self.out_path_h = pre_activation(n, n_chans_out, bias=True)  # 20
+#         self.out_path_g = pre_activation(n, 1, bias=True)  # 20
+
+#     def forward(self, x: torch.Tensor, return_num_and_denom: bool = False):
+#         warnings.filterwarnings('ignore')
+#         x0 = self.init_path(x)
+#         x1 = self.down1(x0)
+#         x2 = self.down2(x1)
+#         x3 = self.down3(x2)
+#         x3_up = self.up3(self.bottleneck(x3) + x3)
+#         x2_up = self.up2(x3_up + x2)
+#         x1_up = self.up1(x2_up + x1)
+#         x_out = self.out_path(x1_up + x0)
+#         h_out = self.out_path_h(x_out)
+#         g_out = torch.sigmoid(self.out_path_g(x_out))
+#         warnings.filterwarnings('default')
+
+#         if return_num_and_denom:
+#             return h_out / g_out, h_out, g_out
+
+#         return h_out / g_out
 
 
 class UNet_GODIN(UNet):
