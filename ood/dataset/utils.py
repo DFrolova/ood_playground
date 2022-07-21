@@ -1,110 +1,54 @@
-import os
+from typing import Union
 
 import numpy as np
-from skimage import measure
-# from skimage.segmentation import flood
+from connectome import Transform
+from skimage.measure import label
 
-from dpipe.dataset.wrappers import Proxy
 from dpipe.im.shape_ops import zoom, crop_to_box, pad
-from dpipe.io import load
-from ood.paths import LUNGS_BBOXES_PATH
 
 
-class Change(Proxy):
-    def _change(self, x, i):
-        raise NotImplementedError
+class Shape(Transform):
+    __inherit__ = True
 
-    def load_image(self, i):
-        return self._change(self._shadowed.load_image(i), i)
-
-    def load_segm(self, i):
-        return np.float32(self._change(self._shadowed.load_segm(i), i) >= .5)
+    def shape(image):
+        return image.shape
 
 
-class Rescale3D(Change):
-    def __init__(self, shadowed, new_voxel_spacing=1., order=3):
-        super().__init__(shadowed)
-        self.new_voxel_spacing = np.broadcast_to(new_voxel_spacing, 3).astype(float)
-        self.order = order
+class ScaleHU(Transform):
+    __inherit__ = True
 
-    def _scale_factor(self, i):
-        old_voxel_spacing = self._shadowed.load_spacing(i)
-        scale_factor = old_voxel_spacing / self.new_voxel_spacing
-        return np.nan_to_num(scale_factor, nan=1)
+    # Standard lung window by default:
+    _min_hu: int = -1350
+    _max_hu: int = 300
 
-    def _change(self, x, i):
-        return zoom(x, self._scale_factor(i), order=self.order)
-
-    def load_spacing(self, i):
-        old_spacing = self.load_orig_spacing(i)
-        spacing = self.new_voxel_spacing.copy()
-        spacing[np.isnan(spacing)] = old_spacing[np.isnan(spacing)]
-        return spacing
-
-    def load_orig_spacing(self, i):
-        return self._shadowed.load_spacing(i)
-
-    def load_tumor_centers(self, i):
-        segm = self.load_segm(i=i)
-        y_bin = segm == 1.
-        labels, n_labels = measure.label(y_bin, connectivity=2, return_num=True)
-        result_centers = [np.argwhere(labels == label) for label in range(1, n_labels + 1)]
-        lengths_cc = np.array([len(cc) for cc in result_centers])
-        probas = np.array([1 / len_cc for len_cc in lengths_cc]) / n_labels
-        broadcated_probas = np.repeat(probas, lengths_cc)[:, None]
-        return np.hstack((np.vstack(result_centers), broadcated_probas))
+    def image(image, _min_hu, _max_hu):
+        assert _max_hu > _min_hu
+        image = np.clip(image, _min_hu, _max_hu)
+        min_val = np.min(image)
+        max_val = np.max(image)
+        return np.array((image.astype(np.float32) - min_val) / (max_val - min_val), dtype=image.dtype)
 
 
-class CropToLungs(Change):
-    def __init__(self, shadowed, dataset_name, bboxes_path=LUNGS_BBOXES_PATH):
-        super().__init__(shadowed)
-        self.lungs_bboxes = load(os.path.join(LUNGS_BBOXES_PATH, f'{dataset_name}.json'))
+class Zoom(Transform):
+    __inherit__ = True
+    _new_spacing: Union[tuple, float, int] = (None, None, None)
+    _order = 1
 
-    def _change(self, x, i):
-        return crop_to_box(x, self.lungs_bboxes[i])
+    def _scale_factor(voxel_spacing, _new_spacing):
+        if not isinstance(_new_spacing, (tuple, list, np.ndarray)):
+            _new_spacing = np.broadcast_to(_new_spacing, 3)
+        return np.nan_to_num(np.float32(voxel_spacing) / np.float32(_new_spacing), nan=1)
 
-    def load_orig_image(self, i):
-        return self._shadowed.load_image(i)
+    def image(image, _scale_factor, _order):
+        return np.array(zoom(image.astype(np.float32), _scale_factor, order=_order), dtype=image.dtype)
 
-
-# class CropToLungs(Change):
-#     def __init__(self, shadowed, lungs_threshold=-600, lungs_fraction_threshold=0.005):
-#         super().__init__(shadowed)
-#         self.lungs_threshold = lungs_threshold
-#         self.lungs_fraction_threshold = lungs_fraction_threshold
-
-#     def _bbox(self, i):
-#         x = self._shadowed.load_image(i)
-#         # find lungs
-#         lungs_mask = x < self.lungs_threshold
-#         # find air
-#         air_mask = flood(pad(lungs_mask, padding=1, axis=(0, 1), padding_values=True),
-#                          seed_point=(0, 0, 0))[1:-1, 1:-1]
-#         lungs_mask = lungs_mask & ~air_mask
-
-#         if not lungs_mask.any():
-# #             print(f'Warning: no lungs were found! Case: {i}', flush=True)
-#             lungs_mask[0, 0, 0] = lungs_mask[-1, -1, -1] = True
-
-#         box = mask2bounding_box(lungs_mask)
-#         return box
-
-#     def _change(self, x, i):
-#         return crop_to_box(x, self._bbox(i))
-
-#     def load_orig_image(self, i):
-#         return self._shadowed.load_image(i)
+    def mask(mask, _scale_factor):
+        return np.array(zoom(mask.astype(np.float32), _scale_factor) > 0.5, dtype=mask.dtype)
 
 
-def scale_mri(image: np.ndarray, q_min: int = 1, q_max: int = 99) -> np.ndarray:
-    image = np.clip(np.float32(image), *np.percentile(np.float32(image), [q_min, q_max]))
-    image -= np.min(image)
-    image /= np.max(image)
-    return np.float32(image)
+class TumorCenters(Transform):
+    __inherit__ = True
 
-
-def scale_ct(x: np.ndarray, min_value: float = -1350, max_value: float = 300) -> np.ndarray:
-    x = np.clip(x, a_min=min_value, a_max=max_value)
-    x -= np.min(x)
-    x /= np.max(x)
-    return np.float32(x)
+    def tumor_centers(mask):
+        labels, n_labels = label(mask > 0.5, connectivity=3, return_num=True)
+        return np.int16([np.round(np.mean(np.argwhere(labels == i), axis=0)) for i in range(1, n_labels + 1)])

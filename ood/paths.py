@@ -10,6 +10,9 @@ CC359_DATA_PATH = choose_root(
     '/',  # TODO: avoiding `FileNotFoundError`
 )
 
+LIDC_DATA_PATH = None
+LITS_DATA_PATH = None
+
 WMH_DATA_PATH = choose_root(
     '/nmnt/x3-hdd/data/da_mri/wmh_ants',
     '/gpfs/data/gpfs0/b.shirokikh/data/wmh_ants',
@@ -53,7 +56,7 @@ ENSEMBLE_MODELS_PATH_CC359 = choose_root(
 )
 
 ENSEMBLE_MODELS_PATH_LIDC = choose_root(
-    '/shared/experiments/ood_playground/luna_no_crop/luna/',
+    '/shared/experiments/ood_playground/luna_no_crop/lidc/',
     '/',  # TODO: avoiding `FileNotFoundError`
 )
 
