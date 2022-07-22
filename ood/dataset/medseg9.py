@@ -1,21 +1,12 @@
-import os
-
 import numpy as np
-
-from dpipe.dataset.wrappers import Proxy
-from dpipe.io import load
-from neurodata.medseg_covid_public import MedsegCOVIDPublic9
+from connectome import Transform
 
 
-class Medseg9(Proxy):
-    def __init__(self):
-        super().__init__(MedsegCOVIDPublic9())
-        
-    def load_image(self, i):
-        return np.float32(self.image(i))
+class CanonicalCTOrientation(Transform):
+    __inherit__ = True
 
-    def load_spacing(self, i):
-        return np.float32(self.spacing(i))
-    
-    def load_segm(self, i):
-        return np.float32(self.covid(i))
+    def image(image):
+        return np.swapaxes(image, 0, 1)
+
+    def voxel_spacing(voxel_spacing):
+        return np.array(voxel_spacing)[[1, 0, 2]]

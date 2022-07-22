@@ -1,16 +1,15 @@
 import numpy as np
-
-from dpipe.dataset.wrappers import Proxy
-from neurodata.lits import LiTS as LiTSNeurodata
+from connectome import Transform
 
 
-class LiTS(Proxy):
-    def __init__(self):
-        super().__init__(LiTSNeurodata())
-        self.ids = [uid for uid in self.ids if not uid.startswith('lits-test-')]
+class CanonicalCTOrientation(Transform):
+    __inherit__ = True
 
-    def load_image(self, i):
-        return np.float32(self.image(i))
+    def image(image):
+        return np.moveaxis(image, 1, 0)[::-1, :, ::-1]
 
-    def load_spacing(self, i):
-        return np.float32(self.spacing(i))
+    def mask(mask):
+        return np.moveaxis(mask, 1, 0)[::-1, :, ::-1]
+
+    def voxel_spacing(voxel_spacing):
+        return np.array(voxel_spacing)[[1, 0, 2]]
