@@ -19,7 +19,7 @@ def get_singular_vectors_and_values(feature_map):
     u, S, v = np.linalg.svd(feature_map, full_matrices=False, compute_uv=True)
     normalized_S = np.log(S)
     normalized_S /= np.linalg.norm(normalized_S)
-    return u[:5], S, normalized_S
+    return u[0], S, normalized_S
 
 
 def get_singular_values(feature_map):

@@ -58,41 +58,44 @@ def get_ood_scores_from_embedding(test_ids, train_predictions_path, spectrum_fol
         save_json(result, os.path.join(results_path, spectrum_folder + '__' + metric_name + '.json'), indent=0)
 
 
-def get_all_scores_from_features(predict_fn, load_x, test_ids, train_predictions_path, results_path,
-                                 exist_ok=False, compute_sing_vectors=True):
+def get_all_scores_from_features(predict_fn, load_x, test_ids, test_ids_embeddings, train_predictions_path,
+                                 results_path, exist_ok=False):
+    hist_bins = [100, 150, 200]
 
     if not os.path.exists('spectrum'):
-        if compute_sing_vectors:
-            for i in range(1, 6):
-                os.makedirs(f'sing_vector_{i}', exist_ok=exist_ok)
+
+        for n_bins in hist_bins:
+            os.makedirs(f'histograms_{n_bins}', exist_ok=exist_ok)
 
         os.makedirs('spectrum', exist_ok=exist_ok)
         os.makedirs('normalized_spectrum', exist_ok=exist_ok)
+        os.makedirs('sing_vector', exist_ok=exist_ok)
         os.makedirs('mean', exist_ok=exist_ok)
         os.makedirs('mean_std', exist_ok=exist_ok)
 
-        for uid in tqdm(test_ids):
+        for uid in tqdm(test_ids_embeddings):
             feature_map = predict_fn(load_x(uid))
-            if compute_sing_vectors:
-                if uid != 'lits-train-22': # TODO remove
-                    u, s, s_norm = get_singular_vectors_and_values(feature_map)
-                else:
-                    u, s, s_norm = np.zeros_like(u), np.zeros_like(s), np.zeros_like(s_norm)
-                for i in range(1, 6):
-                    save(u[:i].flatten(), f'sing_vector_{i}/{uid}.npy')
-            else:
-                s, s_norm = get_singular_values(feature_map)
-                
+            u, s, s_norm = get_singular_vectors_and_values(feature_map)
+            save(u, f'sing_vector/{uid}.npy')
+
             mean_std_embed = get_mean_std(feature_map)
+
+            # compute histogram
+            for n_bins in hist_bins:
+                # scale to 0-1
+                feature_map -= np.min(feature_map)
+                feature_map /= np.max(feature_map)
+
+                histogram, bin_edges = np.histogram(feature_map, bins=n_bins, range=(0, 1), density=True)
+                save(histogram, f'histograms_{n_bins}/{uid}.npy')
 
             save(s, f'spectrum/{uid}.npy')
             save(s_norm, f'normalized_spectrum/{uid}.npy')
             save(mean_std_embed[:int(len(mean_std_embed) // 2)], f'mean/{uid}.npy')
             save(mean_std_embed, f'mean_std/{uid}.npy')
-            
-    all_methods = ['spectrum', 'normalized_spectrum', 'mean', 'mean_std']
-    if compute_sing_vectors:
-        all_methods += [f'sing_vector_{i}' for i in range(1, 6)]
+
+    all_methods = ['spectrum', 'normalized_spectrum', 'mean', 'mean_std', 'sing_vector']
+    all_methods += [f'histograms_{n_bins}' for n_bins in hist_bins]
 
     for embedding_folder in tqdm(all_methods):
         for postfix in ['init', 'scale', 'norm']:
