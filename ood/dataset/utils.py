@@ -28,6 +28,19 @@ class ScaleHU(Transform):
         return np.array((image.astype(np.float32) - min_val) / (max_val - min_val), dtype=image.dtype)
 
 
+class ScaleMRI(Transform):
+    __inherit__ = True
+
+    _q_min: int = 1
+    _q_max: int = 99
+
+    def image(image, _q_min, _q_max):
+        image = np.clip(image, *np.percentile(np.float32(image), [_q_min, _q_max]))
+        min_val = np.min(image)
+        max_val = np.max(image)
+        return np.array((image.astype(np.float32) - min_val) / (max_val - min_val), dtype=image.dtype)
+
+
 class Zoom(Transform):
     __inherit__ = True
     _new_spacing: Union[tuple, float, int] = (None, None, None)
