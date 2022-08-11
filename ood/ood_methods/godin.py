@@ -25,7 +25,6 @@ def evaluate_individual_metrics_godin(load_y, load_x, predict, metrics: dict, te
             target = np.zeros_like(image)
 
         prediction, scores = predict(image)
-
         results['godin'][_id] = scores.mean()
 
         for metric_name, metric in metrics.items():
