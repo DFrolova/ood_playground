@@ -8,11 +8,14 @@ MEDSEG9_DATA_PATH = None
 MIDRC_DATA_PATH = None
 CANCER500_DATA_PATH = None
 CT_ICH_DATA_PATH = None
-VSSEG_DATA_PATH = None
+VSSEG_DATA_PATH = '/shared/data/VS-SEG/'
 CC359_DATA_PATH = None
 CROSSMODA_DATA_PATH = None
 NSCLC_DATA_PATH = None
 EGD_DATA_PATH = '/shared/data/EGD'
+
+# LIDC_AUGM_DATA_PATH = '/shared/experiments/ood_playground/lidc_augm_data'
+# VSSEG_AUGM_DATA_PATH = '/shared/experiments/ood_playground/vsseg_augm_data'
 
 LIDC_ARTIFACTS_DATA_PATH = '/shared/experiments/ood_playground/artifacts_lidc'
 

@@ -10,8 +10,15 @@ class CanonicalCTOrientation(Transform):
     def image(image):
         return np.flip(image, axis=-1)
 
+    def mask(mask):
+        return np.flip(mask, axis=-1)
+
+
+class RenameFields(Transform):
+    __inherit__ = True
+
     def mask(cancer):
-        return np.flip(cancer, axis=-1)
+        return cancer
 
 
 class NumberOfTumors(Transform):

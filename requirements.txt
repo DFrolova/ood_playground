@@ -9,3 +9,6 @@ scikit-image
 pylidc
 dicom-csv
 mdai
+opencv-python
+albumentations
+connectome

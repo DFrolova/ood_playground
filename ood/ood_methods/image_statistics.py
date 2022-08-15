@@ -66,7 +66,7 @@ def get_all_scores_from_image(load_x, test_ids_embeddings, test_ids, train_predi
 
     all_methods = [f'histograms_{n_bins}' for n_bins in hist_bins]
     more_methods = [[f'spectrum_{sc_fact}', f'normalized_spectrum_{sc_fact}', f'mean_{sc_fact}', f'mean_std_{sc_fact}',
-                   f'sing_vector_{sc_fact}'] for sc_fact in scale_factors]
+                     f'sing_vector_{sc_fact}'] for sc_fact in scale_factors]
     all_methods += [x for method_list in more_methods for x in method_list]
 
     for embedding_folder in tqdm(all_methods):
@@ -74,3 +74,72 @@ def get_all_scores_from_image(load_x, test_ids_embeddings, test_ids, train_predi
             get_ood_scores_from_embedding(test_ids=test_ids, train_predictions_path=train_predictions_path,
                                           spectrum_folder=embedding_folder, results_path=results_path,
                                           exist_ok=True, postfix=postfix)
+
+
+def get_all_scores_from_image_augm(load_x_fns, full_uid_fns, test_ids, train_predictions_path, results_path,
+                                   exist_ok=False):
+    hist_bins = [100, 150, 200]
+
+    test_ids_full = []
+    if not os.path.exists(f'histograms_{hist_bins[0]}'):
+        for n_bins in hist_bins:
+            os.makedirs(f'histograms_{n_bins}', exist_ok=exist_ok)
+
+        for uid_num, uid in enumerate(tqdm(test_ids)):
+            for load_x, full_uid_fn in zip(load_x_fns, full_uid_fns):
+                image = load_x(uid).astype(np.float32)
+                full_uid = full_uid_fn(uid)
+                test_ids_full.append(full_uid_fn(uid))
+
+                # compute histogram
+                for n_bins in hist_bins:
+                    # scale to 0-1
+                    image -= np.min(image)
+                    image /= np.max(image)
+
+                    histogram, bin_edges = np.histogram(image, bins=n_bins, range=(0, 1), density=True)
+                    save(histogram, f'histograms_{n_bins}/{full_uid}.npy')
+
+    all_methods = [f'histograms_{n_bins}' for n_bins in hist_bins]
+
+    for embedding_folder in tqdm(all_methods):
+        for postfix in ['init', 'scale', 'norm']:
+            get_ood_scores_from_embedding(test_ids=test_ids_full, train_predictions_path=train_predictions_path,
+                                          spectrum_folder=embedding_folder, results_path=results_path,
+                                          exist_ok=True, postfix=postfix)
+
+# def get_all_scores_from_image_augm(load_x, test_ids, train_predictions_path, results_path,
+#                                    param_dict, transform_fns, exist_ok=False, ):
+#     hist_bins = [100, 150, 200]
+#
+#     test_ids_full = []
+#     if not os.path.exists(f'histograms_{hist_bins[0]}'):
+#         for n_bins in hist_bins:
+#             os.makedirs(f'histograms_{n_bins}', exist_ok=exist_ok)
+#
+#         for uid_num, uid in enumerate(tqdm(test_ids)):
+#             image = load_x(uid).astype(np.float32)
+#
+#             for transform_id, transform_fn in enumerate(transform_fns):
+#                 for cur_param in param_dict[transform_fn]:
+#                     full_uid = '__'.join([str(cur_param), transform_fn.__name__, uid])
+#                     test_ids_full.append(full_uid)
+#                     # apply transform
+#                     img_ood = transform_fn(image, param=cur_param, random_state=transform_id * len(test_ids) + uid_num)
+#
+#                     # compute histogram
+#                     for n_bins in hist_bins:
+#                         # scale to 0-1
+#                         image -= np.min(image)
+#                         image /= np.max(image)
+#
+#                         histogram, bin_edges = np.histogram(img_ood, bins=n_bins, range=(0, 1), density=True)
+#                         save(histogram, f'histograms_{n_bins}/{full_uid}.npy')
+#
+#     all_methods = [f'histograms_{n_bins}' for n_bins in hist_bins]
+#
+#     for embedding_folder in tqdm(all_methods):
+#         for postfix in ['init', 'scale', 'norm']:
+#             get_ood_scores_from_embedding(test_ids=test_ids_full, train_predictions_path=train_predictions_path,
+#                                           spectrum_folder=embedding_folder, results_path=results_path,
+#                                           exist_ok=True, postfix=postfix)
