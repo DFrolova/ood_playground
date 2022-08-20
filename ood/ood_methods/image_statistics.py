@@ -55,18 +55,19 @@ def get_all_scores_from_image(load_x, test_ids_embeddings, test_ids, train_predi
                 save(mean, f'mean_{sc_fact}/{uid}.npy')
                 save(mean_std, f'mean_std_{sc_fact}/{uid}.npy')
 
+           # scale to 0-1
+            image -= np.min(image)
+            image /= np.max(image)
+
             # compute histogram
             for n_bins in hist_bins:
-                # scale to 0-1
-                image -= np.min(image)
-                image /= np.max(image)
-
                 histogram, bin_edges = np.histogram(image, bins=n_bins, range=(0, 1), density=True)
                 save(histogram, f'histograms_{n_bins}/{uid}.npy')
 
     all_methods = [f'histograms_{n_bins}' for n_bins in hist_bins]
-    more_methods = [[f'spectrum_{sc_fact}', f'normalized_spectrum_{sc_fact}', f'mean_{sc_fact}', f'mean_std_{sc_fact}',
-                     f'sing_vector_{sc_fact}'] for sc_fact in scale_factors]
+    more_methods = [[f'sing_vector_{sc_fact}'] for sc_fact in scale_factors]
+    # more_methods = [[f'spectrum_{sc_fact}', f'normalized_spectrum_{sc_fact}', f'mean_{sc_fact}', f'mean_std_{sc_fact}',
+    #                  f'sing_vector_{sc_fact}'] for sc_fact in scale_factors]
     all_methods += [x for method_list in more_methods for x in method_list]
 
     for embedding_folder in tqdm(all_methods):

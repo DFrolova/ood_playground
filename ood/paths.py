@@ -17,7 +17,14 @@ EGD_DATA_PATH = '/shared/data/EGD'
 # LIDC_AUGM_DATA_PATH = '/shared/experiments/ood_playground/lidc_augm_data'
 # VSSEG_AUGM_DATA_PATH = '/shared/experiments/ood_playground/vsseg_augm_data'
 
-LIDC_ARTIFACTS_DATA_PATH = '/shared/experiments/ood_playground/artifacts_lidc'
+# LIDC_ARTIFACTS_DATA_PATH = '/shared/experiments/ood_playground/artifacts_lidc'
+
+# svd benchmark
+LIVER_DATASET_DATA_PATH = '/shared/experiments/ood_playground/svd_paper/liver_data/'
+MSD_DATASET_DATA_PATH = '/shared/experiments/ood_playground/svd_paper/MSD/'
+
+# MOOD
+MOOD_DATA_PATH = '/shared/data/MOOD/'
 
 ENSEMBLE_MODELS_PATH_LIDC = choose_root(
     '/shared/experiments/ood_playground/lidc/lidc/',

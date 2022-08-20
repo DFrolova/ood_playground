@@ -28,6 +28,29 @@ class ScaleHU(Transform):
         return np.array((image.astype(np.float32) - min_val) / (max_val - min_val), dtype=image.dtype)
 
 
+class ScaleUniversal(Transform):
+    __inherit__ = True
+    
+    # Standard lung window by default:
+    _min_hu: int = -1350
+    _max_hu: int = 300
+
+    _q_min: int = 1
+    _q_max: int = 99
+
+    def image(image, modality, _min_hu, _max_hu, _q_min, _q_max):
+        if modality == 'MRI':
+            image = np.clip(image, *np.percentile(np.float32(image), [_q_min, _q_max]))
+            min_val = np.min(image)
+            max_val = np.max(image)
+            return np.array((image.astype(np.float32) - min_val) / (max_val - min_val), dtype=image.dtype)
+        # modality == 'CT'
+        image = np.clip(image, _min_hu, _max_hu)
+        min_val = np.min(image)
+        max_val = np.max(image)
+        return np.array((image.astype(np.float32) - min_val) / (max_val - min_val), dtype=image.dtype)
+
+
 class ScaleMRI(Transform):
     __inherit__ = True
 
