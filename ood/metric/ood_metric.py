@@ -1,7 +1,7 @@
 import warnings
 
 import numpy as np
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, average_precision_score
 
 from dpipe.im.metrics import iou, dice_score
 
@@ -28,6 +28,7 @@ def calc_ood_scores(labels, is_ood_true, print_results=True):
 
     det_acc = detection_accuracy(is_ood_true, labels)
     roc_auc = roc_auc_score(is_ood_true, labels)
+    # roc_auc = average_precision_score(is_ood_true, labels) # TODO revert
     tnr = tnr_at_95_tpr(is_ood_true, labels)
     if print_results:
         print(f'Detection accuracy: {det_acc:.4f}')

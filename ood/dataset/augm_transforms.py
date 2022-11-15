@@ -1,6 +1,7 @@
 import os
 from collections import defaultdict
 from typing import Union
+from functools import lru_cache
 import hashlib
 
 import numpy as np
@@ -8,41 +9,7 @@ from tqdm import tqdm
 from connectome import Transform
 
 from dpipe.io import save_json, load_pred, save, load, load_json
-
-
-class ApplyAugm(Transform):
-    __inherit__ = True
-
-    _transform_fn = None
-    _param = .5
-
-    def _transformed(image, mask, _modified_id, _transform_fn, _param):
-        random_state = int(hashlib.sha1(str.encode(_modified_id)).hexdigest(), 16) % (2 ** 32)
-        if _transform_fn == elastic_transform:
-            result = _transform_fn(img=image, mask=mask.astype(np.float32), param=_param, random_state=random_state)
-        else:
-            result = _transform_fn(img=image, param=_param, random_state=random_state)
-        return result
-
-    def image(_transformed, _transform_fn):
-        if _transform_fn == elastic_transform:
-            image_new, _ = _transformed
-        else:
-            image_new = _transformed
-        return image_new
-
-    def mask(mask, _transformed, _transform_fn):
-        if _transform_fn == elastic_transform:
-            _, mask_new = _transformed
-        else:
-            mask_new = mask
-        return mask_new
-
-    def _modified_id(id, _transform_fn, _param):
-        return '__'.join([str(_param), _transform_fn.__name__, id])
-
-    def modified_id(_modified_id):
-        return _modified_id
+from ood.utils import get_lib_root_path
 
 
 def elastic_transform(img: np.ndarray, mask: np.ndarray = None, param: float = 0.5, random_state: int = 5):
@@ -53,7 +20,7 @@ def elastic_transform(img: np.ndarray, mask: np.ndarray = None, param: float = 0
     fill_value = int(img.min())
     border_mode = cv2.BORDER_CONSTANT
 
-    t = ElasticTransform(alpha=10000 * param, sigma=np.mean(img.shape[:2]) / 10, alpha_affine=0,
+    t = ElasticTransform(alpha=12000 * param, sigma=np.mean(img.shape[:2]) / 11., alpha_affine=0,
                          always_apply=True, border_mode=border_mode, value=fill_value)
     t.set_deterministic(True)
 
@@ -183,6 +150,99 @@ def pixel_shuffling_transform(img: np.ndarray, param: float = 0.5,
     img_new[box[0][0]:box[1][0], box[0][1]:box[1][1], box[0][2]:box[1][2]] = crop_shuffled
 
     return img_new
+
+
+class ApplyAllAugms(Transform):
+    __inherit__ = True
+
+    _param_file = None
+    _transform_file = None
+    
+    @lru_cache(None)
+    def _param_dict(_param_file):
+        return load(os.path.join(get_lib_root_path(), 'configs/assets/dataset/', _param_file))
+    
+    @lru_cache(None)
+    def _transform_dict(_transform_file):
+        return load(os.path.join(get_lib_root_path(), 'configs/assets/dataset/', _transform_file))
+    
+    _str_to_tranform_fn = {
+        'elastic_transform': elastic_transform, 
+        'blur_transform': blur_transform, 
+        'slice_drop_transform': slice_drop_transform, 
+        'contrast_transform': contrast_transform,
+        'corruption_transform': corruption_transform,
+        'pixel_shuffling_transform': pixel_shuffling_transform,
+    }
+
+    def _transformed(image, mask, _modified_id, _transform_fn, _param):
+        random_state = int(hashlib.sha1(str.encode(_modified_id)).hexdigest(), 16) % (2 ** 32)
+        if _transform_fn == elastic_transform:
+            result = _transform_fn(img=image, mask=mask.astype(np.float32), param=_param, random_state=random_state)
+        else:
+            result = _transform_fn(img=image, param=_param, random_state=random_state)
+        return result
+
+    def image(_transformed, _transform_fn):
+        if _transform_fn == elastic_transform:
+            image_new, _ = _transformed
+        else:
+            image_new = _transformed
+        return image_new
+
+    def mask(mask, _transformed, _transform_fn):
+        if _transform_fn == elastic_transform:
+            _, mask_new = _transformed
+        else:
+            mask_new = mask
+        return mask_new
+
+    def _modified_id(id, _transform_fn, _param):
+        return '__'.join([str(_param), _transform_fn.__name__, id])
+
+    def modified_id(_modified_id):
+        return _modified_id
+    
+    def _param(id, _param_dict):
+        return _param_dict[id]
+        
+    def _transform_fn(id, _transform_dict, _str_to_tranform_fn):
+        return _str_to_tranform_fn[_transform_dict[id]]
+
+
+class ApplyAugm(Transform):
+    __inherit__ = True
+
+    _transform_fn = None
+    _param = .5
+
+    def _transformed(image, mask, _modified_id, _transform_fn, _param):
+        random_state = int(hashlib.sha1(str.encode(_modified_id)).hexdigest(), 16) % (2 ** 32)
+        if _transform_fn == elastic_transform:
+            result = _transform_fn(img=image, mask=mask.astype(np.float32), param=_param, random_state=random_state)
+        else:
+            result = _transform_fn(img=image, param=_param, random_state=random_state)
+        return result
+
+    def image(_transformed, _transform_fn):
+        if _transform_fn == elastic_transform:
+            image_new, _ = _transformed
+        else:
+            image_new = _transformed
+        return image_new
+
+    def mask(mask, _transformed, _transform_fn):
+        if _transform_fn == elastic_transform:
+            _, mask_new = _transformed
+        else:
+            mask_new = mask
+        return mask_new
+
+    def _modified_id(id, _transform_fn, _param):
+        return '__'.join([str(_param), _transform_fn.__name__, id])
+
+    def modified_id(_modified_id):
+        return _modified_id
 
 
 def evaluate_individual_metrics_no_pred_with_augm_transforms(load_x_fns, load_y_fns, full_uid_fns, predict,
