@@ -10,7 +10,7 @@ CANCER500_DATA_PATH = None
 CT_ICH_DATA_PATH = None
 VSSEG_DATA_PATH = '/shared/data/VS-SEG/'
 CC359_DATA_PATH = None
-CROSSMODA_DATA_PATH = None
+CROSSMODA_DATA_PATH = '/shared/data/crossmoda2022'
 NSCLC_DATA_PATH = None
 EGD_DATA_PATH = '/shared/data/EGD'
 
