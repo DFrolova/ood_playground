@@ -25,9 +25,9 @@ def generate_anomaly_mask(inputs, random_state: np.random.RandomState, max_anoma
     x1 = flips((x1, ))[0]
 
     a = max_anomaly_size
-    max_image_shape = np.min((x0.shape, x1.shape), axis=0)
-    while np.any(max_image_shape <= a):
-        a /= 2
+    min_image_shape = np.min((x0.shape, x1.shape), axis=0)
+    while np.any(min_image_shape <= a):
+        a //= 2
 
     anomaly_box_shape = random_state.choice([a // 2, a], size=3, p=[0.33, 0.67])
 
