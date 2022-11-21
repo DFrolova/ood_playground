@@ -41,3 +41,16 @@ class CancerMask(Transform):
                 mask |= current_mask
 
         return mask
+
+
+class CanonicalCTOrientation(Transform):
+    __inherit__ = True
+
+    def image(image):
+        return np.transpose(image, (1, 0, 2))[..., ::-1]
+
+    def mask(mask):
+        return np.transpose(mask, (1, 0, 2))[..., ::-1]
+
+    def voxel_spacing(voxel_spacing):
+        return tuple(np.array(voxel_spacing)[[1, 0, 2]].tolist())
