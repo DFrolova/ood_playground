@@ -9,7 +9,7 @@ Here you may find a plenty of useful and lots of useless code.
 ###### 1. Install `ood-playground` module:
 
 ```
-git clone https://gitlab.com/ira-labs/projects/research/ood-playground.git
+git clone git@github.com:DFrolova/ood_playground.git
 cd ood-playground
 pip install -e .
 ```
